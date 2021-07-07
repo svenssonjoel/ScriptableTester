@@ -21,9 +21,12 @@ private slots:
     void serialReadyRead();
 
 private:
+    void parsePacket();
+
     Ui::MainWindow *ui;
 
     QSerialPort *mSerial;
     QList<QSerialPortInfo> mSerialPorts;
+    QByteArray mPacket; /* 130 byte packed in progress */
 };
 #endif // MAINWINDOW_H
