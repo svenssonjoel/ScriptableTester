@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QSerialPort>
 #include <QSerialPortInfo>
+#include <QTimer>
 #include "qcustomplot.h"
 
 QT_BEGIN_NAMESPACE
@@ -18,8 +19,12 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+public slots:
+
 private slots:
     void serialReadyRead();
+
+    void testerSerialReadyRead();
 
     void on_devRefreshPushButton_clicked();
 
@@ -27,6 +32,17 @@ private slots:
 
     void on_radioButton_toggled(bool checked);
 
+    void on_testerConnectPushButton_clicked();
+
+    void on_testerRefreshPushButton_clicked();
+
+    void on_runScriptPushButton_clicked();
+
+    void on_loadScriptPushButton_clicked();
+
+    void on_saveScriptPushButton_clicked();
+
+    void scriptTimerTimeout();
 private:
     void parsePacket();
     void updateSerialPorts();
@@ -35,6 +51,8 @@ private:
     Ui::MainWindow *ui;
 
     QSerialPort *mSerial;
+    QSerialPort *mTesterSerial;
+
     QList<QSerialPortInfo> mSerialPorts;
     QByteArray mPacket; /* 130 byte packet in progress */
     bool mLogging;
@@ -45,6 +63,7 @@ private:
     QSharedPointer<QCPGraphDataContainer> mAmpData;
     QSharedPointer<QCPGraphDataContainer> mWattData;
 
-
+    QTimer mScriptTimer;
+    QStringList mScript;
 };
 #endif // MAINWINDOW_H

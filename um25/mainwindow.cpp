@@ -16,9 +16,13 @@ MainWindow::MainWindow(QWidget *parent)
     mSample = 0;
 
     mSerial = new QSerialPort(this);
+    mTesterSerial = new QSerialPort(this);
 
     connect(mSerial, &QSerialPort::readyRead,
                 this, &MainWindow::serialReadyRead);
+
+    connect(&mScriptTimer, &QTimer::timeout,
+            this, &MainWindow::scriptTimerTimeout);
 
     mPacket.clear();
 
@@ -99,6 +103,11 @@ void MainWindow::updateSerialPorts()
     for (QSerialPortInfo port : mSerialPorts) {
         ui->devSelectComboBox->addItem(port.portName(), port.systemLocation());
     }
+
+    ui->testerSelectComboBox->clear();
+    for (QSerialPortInfo port : mSerialPorts) {
+        ui->testerSelectComboBox->addItem(port.portName(), port.systemLocation());
+    }
 }
 
 void MainWindow::serialReadyRead()
@@ -123,6 +132,8 @@ void MainWindow::serialReadyRead()
 }
 
 void MainWindow::parsePacket() {
+
+    //qDebug() << "parsePacket mSample: " << mSample;
 
     float v = 0;
     float a = 0;
@@ -218,6 +229,10 @@ void MainWindow::on_devConnectPushButton_clicked()
     //QString serialName =  ui->serialComboBox->currentText();
     QString serialLoc  =  ui->devSelectComboBox->currentData().toString();
 
+    if (serialLoc.isEmpty()) {
+        ui->devConnectPushButton->setEnabled(true);
+        return;
+    }
     if (mSerial->isOpen()) {
         qDebug() << "Serial already connected, disconnecting!";
         mSerial->close();
@@ -245,4 +260,135 @@ void MainWindow::on_devConnectPushButton_clicked()
 void MainWindow::on_radioButton_toggled(bool checked)
 {
     mLogging = checked;
+}
+
+
+void MainWindow::testerSerialReadyRead()
+{
+    QByteArray data = mTesterSerial->readAll();
+    QString str = QString(data);
+
+    //ui->logTextBrowser->insertPlainText(str);
+    //QScrollBar *sb = ui->logTextBrowser->verticalScrollBar();
+    //sb->setValue(sb->maximum());
+    qDebug() << QString(data);
+}
+
+void MainWindow::on_testerConnectPushButton_clicked()
+{
+    ui->testerConnectPushButton->setEnabled(false);
+    //QString serialName =  ui->serialComboBox->currentText();
+    QString serialLoc  =  ui->testerSelectComboBox->currentData().toString();
+
+    if (serialLoc.isEmpty()) {
+        ui->testerConnectPushButton->setEnabled(true);
+        return;
+    }
+    if (mTesterSerial->isOpen()) {
+        qDebug() << "Serial already connected, disconnecting!";
+
+        disconnect(mTesterSerial, SIGNAL(readyRead()), 0, 0);
+        mTesterSerial->close();
+    }
+
+    mTesterSerial->setPortName(serialLoc);
+    mTesterSerial->setBaudRate(QSerialPort::Baud115200);
+    mTesterSerial->setDataBits(QSerialPort::Data8);
+    mTesterSerial->setParity(QSerialPort::NoParity);
+    mTesterSerial->setStopBits(QSerialPort::OneStop);
+    mTesterSerial->setFlowControl(QSerialPort::NoFlowControl);
+
+    if(mTesterSerial->open(QIODevice::ReadWrite)) {
+        qDebug() << "SERIAL: OK!";
+    } else {
+        qDebug() << "SERIAL: ERROR!";
+    }
+
+    ui->testerStatusLabel->setText("Sending: init");
+    mTesterSerial->write("init\n");
+
+    mTesterSerial->waitForReadyRead();
+    QByteArray response = mTesterSerial->readAll();
+    QString rstr = QString(response);
+    if (rstr == "OK!\n") {
+        ui->testerStatusLabel->setText("Tester OK!");
+
+        connect(mTesterSerial, &QSerialPort::readyRead,
+                    this, &MainWindow::testerSerialReadyRead);
+
+    } else {
+        ui->testerStatusLabel->setText("Error: " + QString(rstr));
+    }
+    ui->testerConnectPushButton->setEnabled(true);
+}
+
+void MainWindow::on_testerRefreshPushButton_clicked()
+{
+    updateSerialPorts();
+}
+
+void MainWindow::on_runScriptPushButton_clicked()
+{
+    QString script_txt = ui->scriptPlainTextEdit->toPlainText();
+    mScript = script_txt.split("\n");
+
+    mScriptTimer.setTimerType(Qt::PreciseTimer);
+    mScriptTimer.setSingleShot(true);
+    mScriptTimer.setInterval(0);
+    mScriptTimer.start();
+}
+
+void MainWindow::scriptTimerTimeout()
+{
+    if (mScript.isEmpty()) return; /* maybe set script done? */
+
+    QString instr = mScript.takeFirst();
+
+    if (instr.startsWith("SLEEP",Qt::CaseInsensitive)) {
+        QStringList sl = instr.split(" ", QString::SkipEmptyParts);
+
+        bool ok = false;
+        int m = sl.at(1).toInt(&ok);
+
+        if (ok) {
+            mScriptTimer.setInterval(m);
+            mScriptTimer.start();
+        } else {
+            qDebug() << "Error in script";
+        }
+        return;
+    } else if (instr.startsWith("CLEARGRAPHS",Qt::CaseInsensitive)) {
+        ui->voltPlot->graph(0)->data()->clear();
+        ui->ampPlot->graph(0)->data()->clear();
+        ui->wattPlot->graph(0)->data()->clear();
+        //qDebug() << "Setting mSample";
+        mSample = 0;
+
+        //qDebug() << "mSample = " << mSample;
+        mScriptTimer.setInterval(0);
+        mScriptTimer.start();
+        return;
+    } else {
+        if (mTesterSerial->isOpen()) {
+
+            QString str = instr + QString("\n");
+            mTesterSerial->write(str.toUpper().toLocal8Bit());
+            mScriptTimer.setInterval(0);
+            mScriptTimer.start();
+            return;
+        } else {
+            qDebug () << "Error: Tester connection not open.";
+            return;
+        }
+    }
+}
+
+void MainWindow::on_loadScriptPushButton_clicked()
+{
+    qDebug() << "Load: Not implemented";
+}
+
+void MainWindow::on_saveScriptPushButton_clicked()
+{
+    qDebug() << "Save: Not implemented";
 }
