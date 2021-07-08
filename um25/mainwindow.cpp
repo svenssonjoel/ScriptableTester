@@ -3,6 +3,8 @@
 
 #include <QSerialPort>
 #include <QDebug>
+#include <QDateTime>
+#include <QScrollBar>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -10,35 +12,93 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    mLogging = false;
+    mSample = 0;
+
     mSerial = new QSerialPort(this);
 
     connect(mSerial, &QSerialPort::readyRead,
                 this, &MainWindow::serialReadyRead);
 
-    mSerial->setPortName("/dev/rfcomm2");
-    mSerial->setBaudRate(QSerialPort::Baud9600);
-    mSerial->setDataBits(QSerialPort::Data8);
-    mSerial->setParity(QSerialPort::NoParity);
-    mSerial->setStopBits(QSerialPort::OneStop);
-    mSerial->setFlowControl(QSerialPort::NoFlowControl);
-
-    if(mSerial->open(QIODevice::ReadWrite)) {
-        qDebug() << "SERIAL: OK!";
-    } else {
-        qDebug() << "SERIAL: ERROR!";
-    }
-
     mPacket.clear();
 
-    unsigned char cmd[1] = {0xf0};
-    mSerial->write((char *)cmd,1);
-
-
+    initPlots();
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::initPlots()
+{
+    mVoltData = QSharedPointer<QCPGraphDataContainer>(new QCPGraphDataContainer);
+    mAmpData = QSharedPointer<QCPGraphDataContainer>(new QCPGraphDataContainer);
+    mWattData = QSharedPointer<QCPGraphDataContainer>(new QCPGraphDataContainer);
+
+    /* Setup Volt plot */
+    ui->voltPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+    ui->voltPlot->legend->setVisible(true);
+    QFont legendFont = font();
+    legendFont.setPointSize(10);
+    ui->voltPlot->legend->setFont(legendFont);
+    ui->voltPlot->legend->setSelectedFont(legendFont);
+    ui->voltPlot->legend->setSelectableParts(QCPLegend::spItems);
+    ui->voltPlot->yAxis->setLabel("Volt");
+    ui->voltPlot->xAxis->setLabel("Sample");
+    ui->voltPlot->clearGraphs();
+    ui->voltPlot->addGraph();
+
+    ui->voltPlot->graph()->setPen(QPen(Qt::black));
+    ui->voltPlot->graph()->setData(mVoltData);
+    ui->voltPlot->graph()->setName("Volt");
+
+    /* Setup Amp plot */
+    ui->ampPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+    ui->ampPlot->legend->setVisible(true);
+    //QFont legendFont = font();
+    //legendFont.setPointSize(10);
+    ui->ampPlot->legend->setFont(legendFont);
+    ui->ampPlot->legend->setSelectedFont(legendFont);
+    ui->ampPlot->legend->setSelectableParts(QCPLegend::spItems);
+    ui->ampPlot->yAxis->setLabel("A");
+    ui->ampPlot->xAxis->setLabel("Sample");
+    ui->ampPlot->clearGraphs();
+    ui->ampPlot->addGraph();
+
+    ui->ampPlot->graph()->setPen(QPen(Qt::black));
+    ui->ampPlot->graph()->setData(mAmpData);
+    ui->ampPlot->graph()->setName("Ampere");
+
+    /* Setup Watt plot */
+    ui->wattPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+    ui->wattPlot->legend->setVisible(true);
+    //QFont legendFont = font();
+    //legendFont.setPointSize(10);
+    ui->wattPlot->legend->setFont(legendFont);
+    ui->wattPlot->legend->setSelectedFont(legendFont);
+    ui->wattPlot->legend->setSelectableParts(QCPLegend::spItems);
+    ui->wattPlot->yAxis->setLabel("W");
+    ui->wattPlot->xAxis->setLabel("Sample");
+    ui->wattPlot->clearGraphs();
+    ui->wattPlot->addGraph();
+
+    ui->wattPlot->graph()->setPen(QPen(Qt::black));
+    ui->wattPlot->graph()->setData(mWattData);
+    ui->wattPlot->graph()->setName("Watts");
+
+
+}
+
+
+void MainWindow::updateSerialPorts()
+{
+    mSerialPorts = QSerialPortInfo::availablePorts();
+
+    ui->devSelectComboBox->clear();
+    for (QSerialPortInfo port : mSerialPorts) {
+        ui->devSelectComboBox->addItem(port.portName(), port.systemLocation());
+    }
 }
 
 void MainWindow::serialReadyRead()
@@ -74,13 +134,49 @@ void MainWindow::parsePacket() {
     tmp += (unsigned char)mPacket[3];
     v = (float)tmp / 1000.0;
 
+    mVoltData->add(QCPGraphData(mSample, v));
+    ui->voltPlot->rescaleAxes();
+    //ui->voltPlot->yAxis->rescale();
+    //ui->voltPlot->yAxis->setRange(0,10);
+    ui->voltPlot->replot();
+
     tmp = 0;
     tmp = (unsigned char)mPacket[4];
     tmp = tmp << 8;
     tmp += (unsigned char)mPacket[5];
     a = (float)tmp / 10000.0;
 
-    qDebug() << "volts: " << QString::number(v) << " amps: " << QString::number(a);
+    mAmpData->add(QCPGraphData(mSample, a));
+    ui->ampPlot->rescaleAxes();
+    //ui->ampPlot->yAxis->rescale();
+    //ui->voltPlot->yAxis->setRange(0,10);
+    ui->ampPlot->replot();
+
+    tmp = 0;
+    tmp = (unsigned char)mPacket[6];
+    tmp = tmp << 8;
+    tmp += (unsigned char)mPacket[7];
+    tmp = tmp << 8;
+    tmp += (unsigned char)mPacket[8];
+    tmp = tmp << 8;
+    tmp += (unsigned char)mPacket[9];
+    w = (float)tmp / 1000.0;
+
+    mWattData->add(QCPGraphData(mSample, w));
+    ui->wattPlot->rescaleAxes();
+    ui->wattPlot->yAxis->rescale();
+    //ui->wattPlot->xAxis->tra
+    //ui->voltPlot->yAxis->setRange(0,10);
+    ui->wattPlot->replot();
+
+    mSample +=1;
+    if (mLogging) {
+        QString str = QString("volts: " + QString::number(v) + " amps: " + QString::number(a) + " Watts: " + QString::number(w) + "\n");
+
+        ui->logTextBrowser->insertPlainText(str);
+        QScrollBar *sb = ui->logTextBrowser->verticalScrollBar();
+        sb->setValue(sb->maximum());
+    }
 }
 
 
@@ -110,3 +206,43 @@ Offset 	Length 	Type 	Meaning
 128 	1 	unknown 	See below
 129 	1 	checksum/unknown 	Checksum (UM34C) or unknown. See below.
 */
+
+void MainWindow::on_devRefreshPushButton_clicked()
+{
+     updateSerialPorts();
+}
+
+void MainWindow::on_devConnectPushButton_clicked()
+{
+    ui->devConnectPushButton->setEnabled(false);
+    //QString serialName =  ui->serialComboBox->currentText();
+    QString serialLoc  =  ui->devSelectComboBox->currentData().toString();
+
+    if (mSerial->isOpen()) {
+        qDebug() << "Serial already connected, disconnecting!";
+        mSerial->close();
+    }
+
+    mSerial->setPortName(serialLoc);
+    mSerial->setBaudRate(QSerialPort::Baud9600);
+    mSerial->setDataBits(QSerialPort::Data8);
+    mSerial->setParity(QSerialPort::NoParity);
+    mSerial->setStopBits(QSerialPort::OneStop);
+    mSerial->setFlowControl(QSerialPort::NoFlowControl);
+
+    if(mSerial->open(QIODevice::ReadWrite)) {
+        qDebug() << "SERIAL: OK!";
+    } else {
+        qDebug() << "SERIAL: ERROR!";
+    }
+
+    unsigned char cmd[1] = {0xf0};
+    mSerial->write((char *)cmd,1);
+
+    ui->devConnectPushButton->setEnabled(true);
+}
+
+void MainWindow::on_radioButton_toggled(bool checked)
+{
+    mLogging = checked;
+}
