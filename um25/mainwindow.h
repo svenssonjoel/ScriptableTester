@@ -30,8 +30,6 @@ private slots:
 
     void on_devConnectPushButton_clicked();
 
-    void on_radioButton_toggled(bool checked);
-
     void on_testerConnectPushButton_clicked();
 
     void on_testerRefreshPushButton_clicked();
@@ -43,10 +41,16 @@ private slots:
     void on_saveScriptPushButton_clicked();
 
     void scriptTimerTimeout();
+
+    void on_logRadioButton_toggled(bool checked);
+
+    void on_sampleRadioButton_toggled(bool checked);
+
 private:
     void parsePacket();
     void updateSerialPorts();
     void initPlots();
+    void finishScript();
 
     Ui::MainWindow *ui;
 
@@ -58,12 +62,15 @@ private:
     bool mLogging;
 
     double mSample;
+    bool mSampling;
 
     QSharedPointer<QCPGraphDataContainer> mVoltData;
     QSharedPointer<QCPGraphDataContainer> mAmpData;
     QSharedPointer<QCPGraphDataContainer> mWattData;
 
+    bool mScriptRunning;
     QTimer mScriptTimer;
     QStringList mScript;
+
 };
 #endif // MAINWINDOW_H

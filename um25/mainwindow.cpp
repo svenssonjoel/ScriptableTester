@@ -14,6 +14,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     mLogging = false;
     mSample = 0;
+    mSampling = false;
+    mScriptRunning = false;
 
     mSerial = new QSerialPort(this);
     mTesterSerial = new QSerialPort(this);
@@ -126,8 +128,10 @@ void MainWindow::serialReadyRead()
 
         mPacket.clear();
 
-        unsigned char cmd[1] = {0xf0};
-        mSerial->write((char *)cmd,1);
+        if (mSampling || mScriptRunning) {
+            unsigned char cmd[1] = {0xf0};
+            mSerial->write((char *)cmd,1);
+        }
     }
 }
 
@@ -257,12 +261,6 @@ void MainWindow::on_devConnectPushButton_clicked()
     ui->devConnectPushButton->setEnabled(true);
 }
 
-void MainWindow::on_radioButton_toggled(bool checked)
-{
-    mLogging = checked;
-}
-
-
 void MainWindow::testerSerialReadyRead()
 {
     QByteArray data = mTesterSerial->readAll();
@@ -336,11 +334,28 @@ void MainWindow::on_runScriptPushButton_clicked()
     mScriptTimer.setSingleShot(true);
     mScriptTimer.setInterval(0);
     mScriptTimer.start();
+
+    ui->sampleRadioButton->toggled(true); // maybe control with an instr in the script?
+    ui->sampleRadioButton->setChecked(true);
+    ui->sampleRadioButton->setEnabled(false);
+}
+
+void MainWindow::finishScript()
+{
+    /* restore gui state */
+    ui->sampleRadioButton->toggled(false);
+    ui->sampleRadioButton->setChecked(false);
+    ui->sampleRadioButton->setEnabled(true);
+
+    return;
 }
 
 void MainWindow::scriptTimerTimeout()
 {
-    if (mScript.isEmpty()) return; /* maybe set script done? */
+    if (mScript.isEmpty()) {
+        finishScript();
+        return; /* maybe set script done? */
+    }
 
     QString instr = mScript.takeFirst();
 
@@ -391,4 +406,16 @@ void MainWindow::on_loadScriptPushButton_clicked()
 void MainWindow::on_saveScriptPushButton_clicked()
 {
     qDebug() << "Save: Not implemented";
+}
+
+void MainWindow::on_logRadioButton_toggled(bool checked)
+{
+    mLogging = checked;
+}
+
+void MainWindow::on_sampleRadioButton_toggled(bool checked)
+{
+    mSampling = checked;
+    unsigned char cmd[1] = {0xf0}; /* start sampling */
+    mSerial->write((char *)cmd,1);
 }

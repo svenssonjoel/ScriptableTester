@@ -18,7 +18,7 @@
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -208,7 +208,7 @@
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_3">
             <item>
-             <widget class="QRadioButton" name="radioButton">
+             <widget class="QRadioButton" name="logRadioButton">
               <property name="text">
                <string>Log</string>
               </property>
@@ -250,6 +250,13 @@
            <widget class="QCustomPlot" name="wattPlot" native="true"/>
           </item>
          </layout>
+        </item>
+        <item row="1" column="0">
+         <widget class="QRadioButton" name="sampleRadioButton">
+          <property name="text">
+           <string>Sample</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
