@@ -1,5 +1,15 @@
-# Attempt to interface with um25
+# Scriptable Iot/Embedded system Tester (Work in progress)
 
+The plan is to implement a system for providing stimuli to an embedded
+system under test in a repeatable way while collecting statistics about 
+for example current draw. 
+
+
+## Required equipment 
+
+1. Computer capable of running Qt applications with Bluetooth.
+2. Ruideng UM25C ammeter.
+3. STM32F4-Discovery to act as the stimuli-provider. 
 
 
 ## Connect UM25
