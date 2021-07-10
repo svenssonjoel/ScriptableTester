@@ -46,6 +46,8 @@ private slots:
 
     void on_sampleRadioButton_toggled(bool checked);
 
+    void on_clearGraphsPushButton_clicked();
+
 private:
     void parsePacket();
     void updateSerialPorts();

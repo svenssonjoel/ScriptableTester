@@ -338,6 +338,8 @@ void MainWindow::on_runScriptPushButton_clicked()
     ui->sampleRadioButton->toggled(true); // maybe control with an instr in the script?
     ui->sampleRadioButton->setChecked(true);
     ui->sampleRadioButton->setEnabled(false);
+
+    ui->clearGraphsPushButton->setEnabled(false);
 }
 
 void MainWindow::finishScript()
@@ -346,6 +348,8 @@ void MainWindow::finishScript()
     ui->sampleRadioButton->toggled(false);
     ui->sampleRadioButton->setChecked(false);
     ui->sampleRadioButton->setEnabled(true);
+
+    ui->clearGraphsPushButton->setEnabled(true);
 
     return;
 }
@@ -415,7 +419,18 @@ void MainWindow::on_logRadioButton_toggled(bool checked)
 
 void MainWindow::on_sampleRadioButton_toggled(bool checked)
 {
+    qDebug() << "Sampling: " << (checked ? "ON" : "OFF");
     mSampling = checked;
-    unsigned char cmd[1] = {0xf0}; /* start sampling */
-    mSerial->write((char *)cmd,1);
+    if (checked) {
+        unsigned char cmd[1] = {0xf0}; /* start sampling */
+        mSerial->write((char *)cmd,1);
+    }
+}
+
+void MainWindow::on_clearGraphsPushButton_clicked()
+{
+    mSample = 0;
+    ui->voltPlot->graph(0)->data()->clear();
+    ui->ampPlot->graph(0)->data()->clear();
+    ui->wattPlot->graph(0)->data()->clear();
 }
