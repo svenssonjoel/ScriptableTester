@@ -25,3 +25,6 @@ Scanning ...
 2. `rfcomm bind 0 aa:bb:cc:dd:ee:ff`
 
 
+## Future work
+
+1. Add support for additional meters. [this](https://reference.digilentinc.com/pmod/pmodisns20/start) is one option.
