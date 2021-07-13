@@ -28,3 +28,8 @@ Scanning ...
 ## Future work
 
 1. Add support for additional meters. [this](https://reference.digilentinc.com/pmod/pmodisns20/start) is one option.
+2. Response time measurement 
+   - Can we trigger two captures on a counter from two different GPIO? 
+   - Can we set an output gpio to trigger capture?
+   - How fast can we run the counter (TIMx)? 
+     
