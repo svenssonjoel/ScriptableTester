@@ -118,6 +118,7 @@ int main(void) {
       chprintf(chp,"You got mail!\r\n");
       chprintf(chp,"start: %u\r\n", msg.start);
       chprintf(chp,"stop:  %u\r\n", msg.stop);
+      chprintf(chp,"diff ticks: %u\r\n", msg.stop - msg.start);
       timer_reset();
     } else {
       //chprintf(chp, "no message\r\n");

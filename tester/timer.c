@@ -53,7 +53,7 @@ bool poll_mail(timer_msg_t *t) {
   bool r = true;
   msg_t msg_val;
 
-  int m = chMBFetchTimeout(&mb, &msg_val, 100);
+  int m = chMBFetchTimeout(&mb, &msg_val, TIME_IMMEDIATE);
 
   if (m == MSG_OK) {
     *t = *(timer_msg_t*)msg_val;
@@ -146,7 +146,9 @@ void timer_reset(void) {
 
   tim5->CR1 &= ~0x1; /* Disable counter */
   tim5->CNT = 0x0;   /* Clear count */
-  //tim5->EGR = 0x1;   /* Maybe not needed */ 
+  tim5->CCR[0] = 0;
+  tim5->CCR[1] = 0;
+  tim5->EGR = 0x1;   /* Maybe not needed */ 
   tim5->CR1 |= 0x1;  /* Start timer */
 }
 
