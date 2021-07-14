@@ -31,4 +31,6 @@ typedef struct {
 extern void timer_init(void);
 extern void timer_reset(void);
 
+extern bool poll_mail(timer_msg_t *t);
+
 #endif

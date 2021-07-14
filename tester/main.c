@@ -89,30 +89,58 @@ int main(void) {
   chThdSleepMilliseconds(2000);
   chp = (BaseSequentialStream*)&SDU1;
 
+  /* palSetPadMode(GPIOA, 1, */
+  /* 		PAL_MODE_OUTPUT_PUSHPULL | */
+  /* 		PAL_STM32_OSPEED_HIGHEST); */
+
+  palSetPadMode(GPIOA, 0,
+		PAL_MODE_INPUT_PULLDOWN | 
+		PAL_MODE_ALTERNATE(2));
   palSetPadMode(GPIOA, 1,
-		PAL_MODE_OUTPUT_PUSHPULL |
-		PAL_STM32_OSPEED_HIGHEST);
-  
+		PAL_MODE_INPUT_PULLDOWN | 
+		PAL_MODE_ALTERNATE(2));
 
+  palSetPadMode(GPIOA, 2,
+   		PAL_MODE_OUTPUT_PUSHPULL | 
+   		PAL_STM32_OSPEED_HIGHEST); 
+
+  
   chprintf(chp, "Tester starting up\n");
-  
-  while(true) {
-    chThdSleepMilliseconds(500);
-    inputline(chp, input_buf, 256);
 
-    if (strncmp(input_buf, "init", 4) == 0) {
-      chprintf(chp, "OK!\n");
-    } else if (strncmp(input_buf, "SET", 3) == 0) {
-      /* Proof of concept, something smarter later */
-      if (strncmp(input_buf+4, "GPIOA1", 6) == 0) {
-	palWritePad(GPIOA, 1, 1);
-      }
-    } else if (strncmp(input_buf, "CLR", 3) == 0) {
-      /* Proof of concept, something smarter later */
-      if (strncmp(input_buf+4, "GPIOA1", 6) == 0) {
-	palWritePad(GPIOA, 1, 0);
-      }
+  timer_init();
+    
+  while(true) {
+    
+    timer_msg_t msg; 
+
+    if (poll_mail(&msg) ) {
+
+      chprintf(chp,"You got mail!\r\n");
+      chprintf(chp,"start: %u\r\n", msg.start);
+      chprintf(chp,"stop:  %u\r\n", msg.stop);
+      timer_reset();
+    } else {
+      //chprintf(chp, "no message\r\n");
     }
+		       
+    //chThdSleepMilliseconds(500);
+      //inputline(chp, input_buf, 256);
+
+    //chprintf(chp, "tick\r\n");
+    
+    /* if (strncmp(input_buf, "init", 4) == 0) { */
+    /*   chprintf(chp, "OK!\n"); */
+    /* } else if (strncmp(input_buf, "SET", 3) == 0) { */
+    /*   /\* Proof of concept, something smarter later *\/ */
+    /*   if (strncmp(input_buf+4, "GPIOA1", 6) == 0) { */
+    /* 	palWritePad(GPIOA, 1, 1); */
+    /*   } */
+    /* } else if (strncmp(input_buf, "CLR", 3) == 0) { */
+    /*   /\* Proof of concept, something smarter later *\/ */
+    /*   if (strncmp(input_buf+4, "GPIOA1", 6) == 0) { */
+    /* 	palWritePad(GPIOA, 1, 0); */
+    /*   } */
+    /* } */
 
 
     memset(input_buf,0,1024);
