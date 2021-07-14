@@ -35,3 +35,6 @@ Scanning ...
      
 
 PA0 - PA3 can be connected to TIM5_CH1 - TIM5_CH4 using (alternate function) AF 2 
+
+- Not sure timer_reset works. Atleast not as I expect. 
+- Need to figure out how fast the timer is counting. More reading in the RM :/
