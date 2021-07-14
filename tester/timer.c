@@ -21,6 +21,15 @@
 
 static stm32_tim_t *tim5 = NULL;
 
+
+#define MAX_MESSAGES 64
+
+msg_t box_contents[MAX_MESSAGES];
+MAILBOX_DECL(mb, box_contents, MAX_MESSAGES);
+
+timer_msg_t msg_storage[MAX_MESSAGES];
+MEMORYPOOL_DECL(msg_pool, MAX_MESSAGES, PORT_NATURAL_ALIGN, NULL);
+
 void timer_init(void) {
   
   
@@ -66,10 +75,10 @@ void timer_init(void) {
   tim5->CCR[3] = 0x0; 
 
 
-  tim5->CCMR &= 0xFFFFFFFC; /* Clear two bits */
-  tim5->CCMR |= 0x00000001; /* CC1S = 01, input IC1 -> TI1 */
-  tim5->CCMR &= 0xFFFFFCFF; /* Clear two bits */
-  tim5->CCMR |= 0x00000100; /* CC2S = 01, input IC2 -> TI2 */
+  tim5->CCMR1 &= 0xFFFFFFFC; /* Clear two bits */
+  tim5->CCMR1 |= 0x00000001; /* CC1S = 01, input IC1 -> TI1 */
+  tim5->CCMR1 &= 0xFFFFFCFF; /* Clear two bits */
+  tim5->CCMR1 |= 0x00000100; /* CC2S = 01, input IC2 -> TI2 */
 
 
 
@@ -77,9 +86,7 @@ void timer_init(void) {
   tim5->CCER |= 0x00000001; /* activate capture on channel 1 */
   tim5->CCER &= 0xFFFFFF2F; /* clear some */
   tim5->CCER |= 0x00000010; /* activate capture on channel 2 */ 
-  
-
-  
+    
   tim5->DIER |= 0x4; 
   
   tim5->CNT = 0;
@@ -96,4 +103,60 @@ void timer_reset(void) {
   tim5->EGR = 0x1;   /* Maybe not needed */ 
   tim5->CR1 |= 0x1;  /* Start timer */
 }
+
+
+
+static bool send_mail(timer_msg_t t) { 
+  bool r = true; /*success*/
+  timer_msg_t *m = (timer_msg_t*)chPoolAllocI(&msg_pool);
+  
+  if (m) { 
+    *m = t;
+    
+    msg_t msg_val = chMBPostI(&mb, (msg_t)m);
+    if (msg_val != MSG_OK) {  /* failed to send */
+      chPoolFree(&msg_pool, m);
+      r = false;
+    }
+  }
+ 
+  return r;
+}
+
+bool block_mail(timer_msg_t *t) {
+
+  bool r = true;
+  msg_t msg_val;
+
+  int m = chMBFetchTimeout(&mb, &msg_val, TIME_INFINITE);
+
+  if (m == MSG_OK) {
+    *t = *(timer_msg_t*)msg_val;
+
+    chPoolFree(&msg_pool, msg_val); /* free the pool allocated pointer */
+  } else {
+    r = false;
+  }
+  return r;
+}
+
+ 
+OSAL_IRQ_HANDLER(STM32_TIM5_HANDLER) {
+  OSAL_IRQ_PROLOGUE();
+  
+  uint32_t sr = tim5->SR;
+  sr &= tim5->DIER & STM32_TIM_DIER_IRQ_MASK;
+  tim5->SR = ~sr;  
+
+  timer_msg_t msg;
+  msg.start = tim5->CCR[0];
+  msg.stop  = tim5->CCR[0];
+  
+  osalSysLockFromISR();
+  send_mail(msg);
+  osalSysUnlockFromISR();
+  
+  OSAL_IRQ_EPILOGUE();
+}
+
 
