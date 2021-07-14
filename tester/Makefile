@@ -126,6 +126,7 @@ LDSCRIPT= $(STARTUPLD)/STM32F407xG.ld
 CSRC = $(ALLCSRC) \
        $(TESTSRC) \
        main.c \
+       timer.c \
        usbcfg.c \
        $(CHIBIOS)/os/various/syscalls.c 
 

@@ -33,3 +33,5 @@ Scanning ...
    - Can we set an output gpio to trigger capture?
    - How fast can we run the counter (TIMx)? (I think the answer is 84MHz which would give a period of 11.904761904762 ns) 
      
+
+PA0 - PA3 can be connected to TIM5_CH1 - TIM5_CH4 using (alternate function) AF 2 

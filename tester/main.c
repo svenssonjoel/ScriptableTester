@@ -26,6 +26,7 @@
 #include "usbcfg.h"
 #include "chprintf.h"
 
+#include "timer.h"
 
 BaseSequentialStream *chp = NULL;
 
