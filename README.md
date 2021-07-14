@@ -31,5 +31,5 @@ Scanning ...
 2. Response time measurement 
    - Can we trigger two captures on a counter from two different GPIO? 
    - Can we set an output gpio to trigger capture?
-   - How fast can we run the counter (TIMx)? 
+   - How fast can we run the counter (TIMx)? (I think the answer is 84MHz which would give a period of 11.904761904762 ns) 
      
