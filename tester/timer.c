@@ -65,6 +65,23 @@ bool poll_mail(timer_msg_t *t) {
   return r;
 }
 
+bool block_mail(timer_msg_t *t) {
+
+  bool r = true;
+  msg_t msg_val;
+
+  int m = chMBFetchTimeout(&mb, &msg_val, TIME_INFINITE);
+
+  if (m == MSG_OK) {
+    *t = *(timer_msg_t*)msg_val;
+
+    chPoolFree(&msg_pool, msg_val); /* free the pool allocated pointer */
+  } else {
+    r = false;
+  }
+  return r;
+}
+
 
 
 
@@ -136,10 +153,7 @@ void timer_init(void) {
   tim5->CNT = 0;
   tim5->EGR = 0x1; // Update event (Makes all the configurations stick)
   tim5->CR1 |= 0x1; // enable
-
-  timer_msg_t msg;
-  msg.start = 0xFFFFFFFF;
-  msg.stop  = 0xFFFFFFFF;  
+  
 }
 
 void timer_reset(void) {

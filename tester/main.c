@@ -67,10 +67,39 @@ int inputline(BaseSequentialStream *chp, char *buffer, int size) {
   return 0; // Filled up buffer without reading a linebreak
 }
 
+static THD_WORKING_AREA(mailmanArea, 1024);
+
+static THD_FUNCTION(mailman, arg) {
+
+  (void)arg;
+
+  char s_str[256];
+  
+  while (true) {
+    timer_msg_t msg;
+
+    if (block_mail(&msg) ) {
+
+      chprintf(chp,"You got mail!\r\n");
+      chprintf(chp,"start: %u\r\n", msg.start);
+      chprintf(chp,"stop:  %u\r\n", msg.stop);
+      chprintf(chp,"diff ticks: %u\r\n", msg.stop - msg.start);
+      double ticks = msg.stop - msg.start;
+      double sec  = ticks / 84000000.0; /* ticks per second */
+      snprintf(s_str,256, "%f s", sec);
+      chprintf(chp,"time: %s\r\n", s_str);
+      timer_reset(); 
+    } else {
+      /* Error: something wrong with messaging */
+      //chprintf(chp, "no message\r\n");
+    }
+  }
+}
+
 int main(void) {
   halInit();
   chSysInit();
-  
+
   sduObjectInit(&SDU1);
   sduStart(&SDU1, &serusbcfg);
 
@@ -89,61 +118,52 @@ int main(void) {
   chThdSleepMilliseconds(2000);
   chp = (BaseSequentialStream*)&SDU1;
 
-  /* palSetPadMode(GPIOA, 1, */
-  /* 		PAL_MODE_OUTPUT_PUSHPULL | */
-  /* 		PAL_STM32_OSPEED_HIGHEST); */
+  /* Start up the mailman */
+  chprintf(chp,"Starting up the mailman\r\n");
+  (void)chThdCreateStatic(mailmanArea,
+			  sizeof(mailmanArea),
+			  NORMALPRIO,
+			  mailman, NULL); 
+
+
+  
+  palSetPadMode(GPIOA, 7,
+  		PAL_MODE_OUTPUT_PUSHPULL |
+  		PAL_STM32_OSPEED_HIGHEST);
+  palWritePad(GPIOA, 7, 0);
 
   palSetPadMode(GPIOA, 0,
-		PAL_MODE_INPUT_PULLDOWN | 
+		PAL_MODE_INPUT_PULLDOWN |
 		PAL_MODE_ALTERNATE(2));
   palSetPadMode(GPIOA, 1,
-		PAL_MODE_INPUT_PULLDOWN | 
+		PAL_MODE_INPUT_PULLDOWN |
 		PAL_MODE_ALTERNATE(2));
 
   palSetPadMode(GPIOA, 2,
-   		PAL_MODE_OUTPUT_PUSHPULL | 
-   		PAL_STM32_OSPEED_HIGHEST); 
+   		PAL_MODE_OUTPUT_PUSHPULL |
+   		PAL_STM32_OSPEED_HIGHEST);
 
-  
   chprintf(chp, "Tester starting up\n");
 
   timer_init();
-    
+
   while(true) {
-    
-    timer_msg_t msg; 
 
-    if (poll_mail(&msg) ) {
+    inputline(chp, input_buf, 256); /* blocks */
 
-      chprintf(chp,"You got mail!\r\n");
-      chprintf(chp,"start: %u\r\n", msg.start);
-      chprintf(chp,"stop:  %u\r\n", msg.stop);
-      chprintf(chp,"diff ticks: %u\r\n", msg.stop - msg.start);
-      timer_reset();
-    } else {
-      //chprintf(chp, "no message\r\n");
+    if (strncmp(input_buf, "init", 4) == 0) {
+      chprintf(chp, "OK!\n");
+    } else if (strncmp(input_buf, "SET", 3) == 0) {
+      /* Proof of concept, something smarter later */
+      if (strncmp(input_buf+4, "GPIOA1", 6) == 0) {
+    	palWritePad(GPIOA, 7, 1);
+      }
+    } else if (strncmp(input_buf, "CLR", 3) == 0) {
+      /* Proof of concept, something smarter later */
+      if (strncmp(input_buf+4, "GPIOA1", 6) == 0) {
+    	palWritePad(GPIOA, 7, 0);
+      }
     }
-		       
-    //chThdSleepMilliseconds(500);
-      //inputline(chp, input_buf, 256);
-
-    //chprintf(chp, "tick\r\n");
-    
-    /* if (strncmp(input_buf, "init", 4) == 0) { */
-    /*   chprintf(chp, "OK!\n"); */
-    /* } else if (strncmp(input_buf, "SET", 3) == 0) { */
-    /*   /\* Proof of concept, something smarter later *\/ */
-    /*   if (strncmp(input_buf+4, "GPIOA1", 6) == 0) { */
-    /* 	palWritePad(GPIOA, 1, 1); */
-    /*   } */
-    /* } else if (strncmp(input_buf, "CLR", 3) == 0) { */
-    /*   /\* Proof of concept, something smarter later *\/ */
-    /*   if (strncmp(input_buf+4, "GPIOA1", 6) == 0) { */
-    /* 	palWritePad(GPIOA, 1, 0); */
-    /*   } */
-    /* } */
-
-
     memset(input_buf,0,1024);
   }
 
