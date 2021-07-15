@@ -342,6 +342,16 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="tab_5">
+       <attribute name="title">
+        <string>Script results</string>
+       </attribute>
+      </widget>
+      <widget class="QWidget" name="tab_6">
+       <attribute name="title">
+        <string>Response Time</string>
+       </attribute>
+      </widget>
      </widget>
     </item>
    </layout>
