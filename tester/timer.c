@@ -179,6 +179,8 @@ OSAL_IRQ_HANDLER(STM32_TIM5_HANDLER) {
   msg.start = tim5->CCR[0];
   msg.stop  = tim5->CCR[1];
 
+
+  timer_reset();
   palWritePad(GPIOA, 2, pin_state);
   pin_state = 1 - pin_state;
     
