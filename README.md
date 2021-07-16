@@ -30,11 +30,7 @@ Scanning ...
 1. Add support for additional meters. [this](https://reference.digilentinc.com/pmod/pmodisns20/start) is one option.
 2. Response time measurement 
    - Can we trigger two captures on a counter from two different GPIO? 
-   - Can we set an output gpio to trigger capture?
-   - How fast can we run the counter (TIMx)? (I think the answer is 84MHz which would give a period of 11.904761904762 ns) 
-     
-
-PA0 - PA3 can be connected to TIM5_CH1 - TIM5_CH4 using (alternate function) AF 2 
-
-- Not sure timer_reset works. Atleast not as I expect. 
-- Need to figure out how fast the timer is counting. More reading in the RM :/
+	 We can capture the counter value upon events on two different GPIO.
+	 PA0 - PA3 can be connected to TIM5_CH1 - TIM5_CH4 using (alternate function) AF 2 
+3. The counter seems to be operating at 84MHz. Need to somehow validate that this is 
+   the case. 
