@@ -1,11 +1,9 @@
-# Scriptable Iot/Embedded system Tester (Work in progress)
+# Scriptable Iot/Embedded system Tester
 
-The plan is to implement a system for providing stimuli to an embedded
-system under test in a repeatable way while collecting statistics about 
-for example current draw. 
+Testing of IoT and embedded using cheap "off-the-shelf" hardware. 
 
 
-## Required equipment 
+## Required equipment (Currently)
 
 1. Computer capable of running Qt applications with Bluetooth.
 2. Ruideng UM25C ammeter.
@@ -23,7 +21,6 @@ Scanning ...
 ```
 
 2. `rfcomm bind 0 aa:bb:cc:dd:ee:ff`
-
 
 ## Future work
 
