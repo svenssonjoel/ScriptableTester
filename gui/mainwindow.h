@@ -20,6 +20,7 @@ typedef struct {
 
 typedef struct {
     uint64_t start_time;
+    uint64_t end_time;
     QVector<sample_t> samples;
 } script_data_t;
 
@@ -65,6 +66,7 @@ private:
     void updateSerialPorts();
     void initPlots();
     void finishScript();
+    void printScriptData();
 
     Ui::MainWindow *ui;
 
@@ -86,6 +88,5 @@ private:
     bool mScriptRunning;
     QTimer mScriptTimer;
     QStringList mScript;
-
 };
 #endif // MAINWINDOW_H

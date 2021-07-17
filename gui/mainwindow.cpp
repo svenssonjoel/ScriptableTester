@@ -12,7 +12,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
+    this->setWindowTitle("ScriptableTester");
     mLogging = false;
     mSample = 0;
     mSampling = false;
@@ -145,11 +145,16 @@ void MainWindow::parsePacket() {
     double a = 0;
     double w = 0;
 
+    uint64_t timestamp = QDateTime::currentMSecsSinceEpoch();
+    sample_t sample;
+    sample.timestamp = timestamp;
+
     unsigned int tmp = 0 ;
     tmp = (unsigned char)mPacket[2];
     tmp = tmp << 8;
     tmp += (unsigned char)mPacket[3];
     v = (double)tmp / 1000.0;
+    sample.volt = v;
 
     mVoltData->add(QCPGraphData(mSample, v));
     ui->voltPlot->rescaleAxes();
@@ -162,6 +167,7 @@ void MainWindow::parsePacket() {
     tmp = tmp << 8;
     tmp += (unsigned char)mPacket[5];
     a = (double)tmp / 10000.0;
+    sample.amp = a;
 
     mAmpData->add(QCPGraphData(mSample, a));
     ui->ampPlot->rescaleAxes();
@@ -178,6 +184,9 @@ void MainWindow::parsePacket() {
     tmp = tmp << 8;
     tmp += (unsigned char)mPacket[9];
     w = (double)tmp / 1000.0;
+    sample.watt = w;
+
+    mScriptData.samples.append(sample);
 
     mWattData->add(QCPGraphData(mSample, w));
     ui->wattPlot->rescaleAxes();
@@ -346,9 +355,35 @@ void MainWindow::on_runScriptPushButton_clicked()
     ui->clearGraphsPushButton->setEnabled(false);
     mScriptRunning = true;
 
+    mScriptData.samples.clear();
     uint64_t ct = QDateTime::currentMSecsSinceEpoch();
-    qDebug() << "Script started at: " << ct;
+    mScriptData.start_time = ct;
+}
 
+
+void MainWindow::printScriptData() {
+
+    QString str = "";
+
+    double watt_tot = 0.0;
+    double time_ms = mScriptData.end_time - mScriptData.start_time;
+    double time_s  = time_ms / 1000.0;
+
+
+    str.append("Timestamp, Volts, Amps, Watts \n");
+    for (auto e : mScriptData.samples) {
+        str.append(QString::number(e.timestamp) + ", " +
+                   QString::number(e.volt) + ", " +
+                   QString::number(e.amp) + ", " +
+                   QString::number(e.watt) + "\n");
+        watt_tot += e.watt;
+    }
+
+    str.append("Total: " + QString::number(watt_tot) + "Ws\n");
+    str.append("Average: " + QString::number(watt_tot / time_s) + "W/s\n");
+    ui->scriptResultsTextBrowser->insertPlainText(str);
+    QScrollBar *sb = ui->scriptResultsTextBrowser->verticalScrollBar();
+    sb->setValue(sb->maximum());
 }
 
 void MainWindow::finishScript()
@@ -363,8 +398,13 @@ void MainWindow::finishScript()
     mScriptRunning = false;
     ui->runScriptPushButton->setEnabled(true); /* enable the button */
 
-    uint64_t ct = QDateTime::currentMSecsSinceEpoch();
-    qDebug() << "Script stopped at: " << ct;
+    uint64_t timestamp = QDateTime::currentMSecsSinceEpoch();
+    mScriptData.end_time = timestamp;
+
+    printScriptData();
+
+
+    //qDebug() << "Script stopped at: " << ct;
 }
 
 void MainWindow::scriptTimerTimeout()
