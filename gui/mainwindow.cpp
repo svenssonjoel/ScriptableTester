@@ -379,8 +379,11 @@ void MainWindow::printScriptData() {
         watt_tot += e.watt;
     }
 
+    str.append("Duration: " + QString::number(time_s) + "s\n");
     str.append("Total: " + QString::number(watt_tot) + "Ws\n");
-    str.append("Average: " + QString::number(watt_tot / time_s) + "W/s\n");
+    str.append("Total: " + QString::number(watt_tot / 3600.0) + "Wh\n");
+    //str.append("Average: " + QString::number(watt_tot / time_s) + "W\n");
+    str.append("\n\n");
     ui->scriptResultsTextBrowser->insertPlainText(str);
     QScrollBar *sb = ui->scriptResultsTextBrowser->verticalScrollBar();
     sb->setValue(sb->maximum());
