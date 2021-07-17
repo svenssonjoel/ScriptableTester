@@ -5,6 +5,7 @@
 #include <QDebug>
 #include <QDateTime>
 #include <QScrollBar>
+#include <QDateTime>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -128,7 +129,7 @@ void MainWindow::serialReadyRead()
 
         mPacket.clear();
 
-        if (mSampling || mScriptRunning) {
+        if (mSampling) {
             unsigned char cmd[1] = {0xf0};
             mSerial->write((char *)cmd,1);
         }
@@ -327,6 +328,8 @@ void MainWindow::on_testerRefreshPushButton_clicked()
 
 void MainWindow::on_runScriptPushButton_clicked()
 {
+    ui->runScriptPushButton->setEnabled(false); /* gray out the button */
+
     QString script_txt = ui->scriptPlainTextEdit->toPlainText();
     mScript = script_txt.split("\n");
 
@@ -340,10 +343,15 @@ void MainWindow::on_runScriptPushButton_clicked()
     ui->sampleRadioButton->setEnabled(false);
 
     ui->clearGraphsPushButton->setEnabled(false);
+    mScriptRunning = true;
+
+    uint64_t ct = QDateTime::currentMSecsSinceEpoch();
+    qDebug() << "Script started at: " << ct;
+
 }
 
 void MainWindow::finishScript()
-{
+{   
     /* restore gui state */
     ui->sampleRadioButton->toggled(false);
     ui->sampleRadioButton->setChecked(false);
@@ -351,12 +359,17 @@ void MainWindow::finishScript()
 
     ui->clearGraphsPushButton->setEnabled(true);
 
-    return;
+    mScriptRunning = false;
+    ui->runScriptPushButton->setEnabled(true); /* enable the button */
+
+    uint64_t ct = QDateTime::currentMSecsSinceEpoch();
+    qDebug() << "Script stopped at: " << ct;
 }
 
 void MainWindow::scriptTimerTimeout()
 {
     if (mScript.isEmpty()) {
+        qDebug() << "Script Finished";
         finishScript();
         return; /* maybe set script done? */
     }
@@ -433,4 +446,7 @@ void MainWindow::on_clearGraphsPushButton_clicked()
     ui->voltPlot->graph(0)->data()->clear();
     ui->ampPlot->graph(0)->data()->clear();
     ui->wattPlot->graph(0)->data()->clear();
+    ui->voltPlot->replot();
+    ui->ampPlot->replot();
+    ui->wattPlot->replot();
 }
