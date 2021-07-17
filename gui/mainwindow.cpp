@@ -17,6 +17,7 @@ MainWindow::MainWindow(QWidget *parent)
     mSample = 0;
     mSampling = false;
     mScriptRunning = false;
+    mScriptData.samples.clear();
 
     mSerial = new QSerialPort(this);
     mTesterSerial = new QSerialPort(this);
@@ -140,15 +141,15 @@ void MainWindow::parsePacket() {
 
     //qDebug() << "parsePacket mSample: " << mSample;
 
-    float v = 0;
-    float a = 0;
-    float w = 0;
+    double v = 0;
+    double a = 0;
+    double w = 0;
 
     unsigned int tmp = 0 ;
     tmp = (unsigned char)mPacket[2];
     tmp = tmp << 8;
     tmp += (unsigned char)mPacket[3];
-    v = (float)tmp / 1000.0;
+    v = (double)tmp / 1000.0;
 
     mVoltData->add(QCPGraphData(mSample, v));
     ui->voltPlot->rescaleAxes();
@@ -160,7 +161,7 @@ void MainWindow::parsePacket() {
     tmp = (unsigned char)mPacket[4];
     tmp = tmp << 8;
     tmp += (unsigned char)mPacket[5];
-    a = (float)tmp / 10000.0;
+    a = (double)tmp / 10000.0;
 
     mAmpData->add(QCPGraphData(mSample, a));
     ui->ampPlot->rescaleAxes();
@@ -176,7 +177,7 @@ void MainWindow::parsePacket() {
     tmp += (unsigned char)mPacket[8];
     tmp = tmp << 8;
     tmp += (unsigned char)mPacket[9];
-    w = (float)tmp / 1000.0;
+    w = (double)tmp / 1000.0;
 
     mWattData->add(QCPGraphData(mSample, w));
     ui->wattPlot->rescaleAxes();

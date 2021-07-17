@@ -11,6 +11,18 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
+typedef struct {
+    uint64_t timestamp;
+    double volt;
+    double amp;
+    double watt;
+} sample_t;
+
+typedef struct {
+    uint64_t start_time;
+    QVector<sample_t> samples;
+} script_data_t;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -65,6 +77,7 @@ private:
 
     double mSample;
     bool mSampling;
+    script_data_t mScriptData;
 
     QSharedPointer<QCPGraphDataContainer> mVoltData;
     QSharedPointer<QCPGraphDataContainer> mAmpData;
