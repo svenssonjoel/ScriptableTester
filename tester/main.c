@@ -126,6 +126,7 @@ int main(void) {
 			  mailman, NULL); 
 
 
+  start_spi_thread();
   
   palSetPadMode(GPIOA, 7,
   		PAL_MODE_OUTPUT_PUSHPULL |

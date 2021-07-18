@@ -127,6 +127,7 @@ CSRC = $(ALLCSRC) \
        $(TESTSRC) \
        main.c \
        timer.c \
+       ISNS20.c \
        usbcfg.c \
        $(CHIBIOS)/os/various/syscalls.c 
 
