@@ -28,7 +28,8 @@ const SPIConfig spicfg = {
   NULL,
   GPIOB,
   SPI_ISNS20_CS_PIN,
-  SPI_CR1_BR_2,
+  SPI_CR1_LSBFIRST | SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0 | SPI_CR1_CPOL | SPI_CR1_RXONLY,
+  0
 };
 
 
@@ -63,19 +64,22 @@ double read_sample(void) {
   
   spiAcquireBus(&SPID3);
   spiStart(&SPID3, &spicfg);
+  
   spiSelect(&SPID3);
   spiReceive(&SPID3, 2, rx_buf);
   spiUnselect(&SPID3);
   spiReleaseBus(&SPID3);
 
-  chprintf(chp, "RAW: %u %u \r\n", rx_buf[0], rx_buf[1]);
- 
-  uint32_t res = rx_buf[0];
-  res << 8;
-  res |= rx_buf[1];
-  double r = res;
-  r = (r / 4096.0 * (-3.0)) / 0.066; /*V per A ???? */
-  return r;
+  /* uint32_t res = 0; */
+  /* res |= rx_buf[0]; */
+  /* res <<= 16; */
+  /* res |= rx_buf[1]; */
+
+  chprintf(chp, "RAW: %x | %x \r\n", rx_buf[0], rx_buf[1]);
+  
+  //double r = res;
+  //r = (r / 4096.0 * (-3.0)) / 0.066; /*V per A ???? */
+  return 0.0;
 }
 
 
@@ -91,10 +95,10 @@ static THD_FUNCTION(spiThread, arg) {
 
     double s = read_sample();
 
-    snprintf(s_str,256, "%f A", s);
-    chprintf(chp, "Sample: %s \r\n", s_str); 
+    // snprintf(s_str,256, "%f A", s);
+    //chprintf(chp, "Sample: %s \r\n", s_str); 
     
-    chThdSleepMilliseconds(1);
+    chThdSleepMilliseconds(250);
   }
 }
 
