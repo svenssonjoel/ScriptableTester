@@ -27,6 +27,7 @@
 #include "chprintf.h"
 
 #include "timer.h"
+#include "ISNS20.h"
 
 BaseSequentialStream *chp = NULL;
 
