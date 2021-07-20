@@ -62,11 +62,10 @@ int main(void) {
   chprintf(chp, "Example responder starting up\n");
 
   while(true) {
-
+    chThdSleepMilliseconds(1000);
     uint32_t value = 0;
 
     value = palReadPad(GPIOA, 0);
-    
     palWritePad(GPIOA,1, value);
   }
 

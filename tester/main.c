@@ -97,6 +97,64 @@ static THD_FUNCTION(mailman, arg) {
   }
 }
 
+
+static THD_WORKING_AREA(responseTestArea, 1024);
+
+bool response_test_running = false;
+
+static THD_FUNCTION(response_tester, arg) {
+  (void)arg;
+  
+  char s_str[256];
+  timer_msg_t msg;
+  uint32_t nTests = 100;
+  
+  while (true) {
+    if (nTests == 0) {
+      nTests = 100;
+      response_test_running = false;
+    } else if (response_test_running) {
+
+      /* Set up for a test */
+      palWritePad(GPIOA, 2, 0);
+
+      /* wait for GPIOA 0 and GPIOA 1 to both read 0. */
+      
+      while (palReadPad(GPIOA, 0) || palReadPad(GPIOA, 1));
+      
+      timer_reset();
+      
+      /* take a short break */
+      chThdSleepMilliseconds(10); 
+      
+      nTests --;
+      /* Initiate a response test by writing a one to GPIOA 2 */
+      palWritePad(GPIOA, 2, 1);
+      
+      if (block_mail(&msg) ) {
+	
+	//chprintf(chp,"You got mail!\r\n");
+	//chprintf(chp,"start: %u\r\n", msg.start);
+	//chprintf(chp,"stop:  %u\r\n", msg.stop);
+	//chprintf(chp,"diff ticks: %u\r\n", msg.stop - msg.start);
+	double ticks = msg.stop - msg.start;
+	double sec  = ticks / 84000.0; /* ticks per millisecond */
+	snprintf(s_str,256, "%f ms", sec);
+	chprintf(chp,"#RESPONSE_LATENCY: %s\r\n", s_str);
+
+	/* We had a response, so prepare for the next test */
+      } else {
+	/* Error in reading from mailbox */
+	
+      }
+    } else {
+      /* sleep for a quarter second */
+      chThdSleepMilliseconds(250);
+    }
+  }
+}
+
+
 int main(void) {
   halInit();
   chSysInit();
@@ -120,27 +178,42 @@ int main(void) {
   chp = (BaseSequentialStream*)&SDU1;
 
   /* Start up the mailman */
-  chprintf(chp,"Starting up the mailman\r\n");
-  (void)chThdCreateStatic(mailmanArea,
-			  sizeof(mailmanArea),
-			  NORMALPRIO,
-			  mailman, NULL); 
-
-
-  start_spi_thread();
+  //chprintf(chp,"Starting up the mailman\r\n");
+  //(void)chThdCreateStatic(mailmanArea,
+  //			  sizeof(mailmanArea),
+  //			  NORMALPRIO,
+  //			  mailman, NULL);
   
+  chprintf(chp,"Starting up response time tester\r\n");
+  (void)chThdCreateStatic(responseTestArea,
+			  sizeof(responseTestArea),
+			  NORMALPRIO,
+			  response_tester, NULL); 
+
+
+  //start_spi_thread();
+
+  /* TODO Start naming these GPIOs so we know what is what */
+
+  /* GPIOA 7 is a generic "stimuli GPIO" used to simulate for 
+     example a button press on the system under test */ 
   palSetPadMode(GPIOA, 7,
   		PAL_MODE_OUTPUT_PUSHPULL |
   		PAL_STM32_OSPEED_HIGHEST);
   palWritePad(GPIOA, 7, 0);
 
+  /* TODO: Maybe move these out to the "timer.c/timer.h"  */ 
+  /* Grab timer to CCR[0] on rising edge on GPIOA 0 */ 
   palSetPadMode(GPIOA, 0,
 		PAL_MODE_INPUT_PULLDOWN |
 		PAL_MODE_ALTERNATE(2));
+
+  /* Grab timer to CCR[1] on rising edge on GPIOA 1 */ 
   palSetPadMode(GPIOA, 1,
 		PAL_MODE_INPUT_PULLDOWN |
 		PAL_MODE_ALTERNATE(2));
 
+  /* Stimuli GPIO, connect to GPIOA0 on "tester" and to the SUT */
   palSetPadMode(GPIOA, 2,
    		PAL_MODE_OUTPUT_PUSHPULL |
    		PAL_STM32_OSPEED_HIGHEST);
@@ -165,7 +238,15 @@ int main(void) {
       if (strncmp(input_buf+4, "GPIOA1", 6) == 0) {
     	palWritePad(GPIOA, 7, 0);
       }
+    } else if (strncmp(input_buf, "RSPTST", 6) == 0) {
+      /* Start a response time test (if it is not already running) */
+      if (!response_test_running) {
+	response_test_running = true;
+      } else {
+	chprintf(chp, "RSPTST already running\r\n");
+      }
     }
+    
     memset(input_buf,0,1024);
   }
 
