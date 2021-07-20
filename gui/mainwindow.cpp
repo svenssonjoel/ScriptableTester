@@ -18,6 +18,8 @@ MainWindow::MainWindow(QWidget *parent)
     mSampling = false;
     mScriptRunning = false;
     mScriptData.samples.clear();
+    mResponseTestRunning = false;
+    mResponseTimeData.clear();
 
     mSerial = new QSerialPort(this);
     mTesterSerial = new QSerialPort(this);
@@ -96,6 +98,39 @@ void MainWindow::initPlots()
     ui->wattPlot->graph()->setName("Watts");
 
 
+    /* Setup responseTime plot */
+    QCPBars *rtBars = new QCPBars(ui->responseTimePlot->xAxis, ui->responseTimePlot->yAxis);
+    rtBars->setName("Response time");
+
+
+    //QVector<double> ticks;
+    //QVector<QString> labels;
+    //ticks << 1 << 2 << 3 << 4 << 5 << 6 << 7;
+    //labels << "*1*" << "*2*" << "*3*" << "*4*" << "*5*" << "*6*" << "*7*";
+    //QSharedPointer<QCPAxisTickerTime> ticker(new QCPAxisTickerTime );
+    //QSharedPointer<QCPAxisTickerText> ticker(new QCPAxisTickerText);
+    //ticker->addTicks(ticks, labels);
+    //ui->responseTimePlot->xAxis->setTicker(ticker);
+    ui->responseTimePlot->xAxis->setTickLabelRotation(0);
+    ui->responseTimePlot->xAxis->setSubTicks(false);
+    ui->responseTimePlot->xAxis->setTickLength(0, 4);
+    ui->responseTimePlot->xAxis->setRange(0, 8);
+    ui->responseTimePlot->xAxis->setBasePen(QPen(Qt::black));
+    ui->responseTimePlot->xAxis->setTickPen(QPen(Qt::black));
+    ui->responseTimePlot->xAxis->grid()->setVisible(true);
+    ui->responseTimePlot->xAxis->grid()->setPen(QPen(QColor(130, 130, 130), 0, Qt::DotLine));
+    ui->responseTimePlot->xAxis->setTickLabelColor(Qt::black);
+    ui->responseTimePlot->xAxis->setLabelColor(Qt::black);
+
+    // ui->responseTimePlot->replot();
+    ui->responseTimePlot->legend->setVisible(true);
+    ui->responseTimePlot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignHCenter);
+    ui->responseTimePlot->legend->setBrush(QColor(255, 255, 255, 100));
+    ui->responseTimePlot->legend->setBorderPen(Qt::NoPen);
+    QFont legendFont2 = font();
+    legendFont2.setPointSize(10);
+    ui->responseTimePlot->legend->setFont(legendFont2);
+    ui->responseTimePlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
 }
 
 
@@ -277,10 +312,29 @@ void MainWindow::testerSerialReadyRead()
     QByteArray data = mTesterSerial->readAll();
     QString str = QString(data);
 
+    if (str.startsWith("#RESPONSE_TEST_DONE")) {
+        ui->startResponseTestPushButton->setEnabled(true);
+        mResponseTestRunning = false;
+    }
+
+    if (str.startsWith("#RESPONSE_LATENCY:")) {
+        QStringList strs = str.split(" ");
+
+        if (strs.size() >= 2) {
+            qDebug() << strs.at(1);
+
+            bool r = false;
+            double value = strs.at(1).toDouble(&r);
+            if (r) {
+                mResponseTimeData.append(value);
+                qDebug () << "parse OK!";
+            }
+        }
+    }
     //ui->logTextBrowser->insertPlainText(str);
     //QScrollBar *sb = ui->logTextBrowser->verticalScrollBar();
     //sb->setValue(sb->maximum());
-    qDebug() << QString(data);
+    //qDebug() << QString(data);
 }
 
 void MainWindow::on_testerConnectPushButton_clicked()
@@ -316,6 +370,7 @@ void MainWindow::on_testerConnectPushButton_clicked()
     ui->testerStatusLabel->setText("Sending: init");
     mTesterSerial->write("init\n");
 
+    /* Todo: Timeout and check the boolean */
     mTesterSerial->waitForReadyRead();
     QByteArray response = mTesterSerial->readAll();
     QString rstr = QString(response);
@@ -493,4 +548,14 @@ void MainWindow::on_clearGraphsPushButton_clicked()
     ui->voltPlot->replot();
     ui->ampPlot->replot();
     ui->wattPlot->replot();
+}
+
+void MainWindow::on_startResponseTestPushButton_clicked()
+{
+    ui->startResponseTestPushButton->setEnabled(false);
+
+    if (mTesterSerial->isOpen()) {
+        mTesterSerial->write("RSPTST\r\n");
+    }
+
 }

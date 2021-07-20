@@ -61,6 +61,8 @@ private slots:
 
     void on_clearGraphsPushButton_clicked();
 
+    void on_startResponseTestPushButton_clicked();
+
 private:
     void parsePacket();
     void updateSerialPorts();
@@ -88,5 +90,9 @@ private:
     bool mScriptRunning;
     QTimer mScriptTimer;
     QStringList mScript;
+
+    bool mResponseTestRunning;
+    QVector<double> mResponseTimeData;
+
 };
 #endif // MAINWINDOW_H
