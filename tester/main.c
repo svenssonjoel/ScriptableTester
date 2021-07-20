@@ -113,6 +113,8 @@ static THD_FUNCTION(response_tester, arg) {
     if (nTests == 0) {
       nTests = 100;
       response_test_running = false;
+      /* Test is finished */
+      chprintf(chp,"#RESPONSE_TEST_DONE\r\n");
     } else if (response_test_running) {
 
       /* Set up for a test */
@@ -132,14 +134,9 @@ static THD_FUNCTION(response_tester, arg) {
       palWritePad(GPIOA, 2, 1);
       
       if (block_mail(&msg) ) {
-	
-	//chprintf(chp,"You got mail!\r\n");
-	//chprintf(chp,"start: %u\r\n", msg.start);
-	//chprintf(chp,"stop:  %u\r\n", msg.stop);
-	//chprintf(chp,"diff ticks: %u\r\n", msg.stop - msg.start);
 	double ticks = msg.stop - msg.start;
 	double sec  = ticks / 84000.0; /* ticks per millisecond */
-	snprintf(s_str,256, "%f ms", sec);
+	snprintf(s_str,256, "%f", sec);
 	chprintf(chp,"#RESPONSE_LATENCY: %s\r\n", s_str);
 
 	/* We had a response, so prepare for the next test */
@@ -245,6 +242,8 @@ int main(void) {
       } else {
 	chprintf(chp, "RSPTST already running\r\n");
       }
+    } else {
+      chprintf(chp, "Unknown command: %s\r\n", input_buf);
     }
     
     memset(input_buf,0,1024);
