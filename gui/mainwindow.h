@@ -69,6 +69,7 @@ private:
     void initPlots();
     void finishScript();
     void printScriptData();
+    void redrawResponsePlots();
 
     Ui::MainWindow *ui;
 
@@ -87,12 +88,17 @@ private:
     QSharedPointer<QCPGraphDataContainer> mAmpData;
     QSharedPointer<QCPGraphDataContainer> mWattData;
 
+    QSharedPointer<QVector<double>> mResponseBuckets;
+    QSharedPointer<QVector<double>> mResponseTickVals;
+    QSharedPointer<QCPBarsDataContainer> mResponseDataContainer;
+
     bool mScriptRunning;
     QTimer mScriptTimer;
     QStringList mScript;
 
     bool mResponseTestRunning;
     QVector<double> mResponseTimeData;
-
+    QCPBars *mResponseBars;
+    QSharedPointer<QCPAxisTickerText> mTicker;
 };
 #endif // MAINWINDOW_H

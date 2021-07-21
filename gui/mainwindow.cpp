@@ -24,6 +24,10 @@ MainWindow::MainWindow(QWidget *parent)
     mSerial = new QSerialPort(this);
     mTesterSerial = new QSerialPort(this);
 
+    mResponseBuckets = QSharedPointer<QVector<double>>(new QVector<double>());
+    mResponseTickVals = QSharedPointer<QVector<double>>(new QVector<double>());
+    mResponseDataContainer = QSharedPointer<QCPBarsDataContainer>(new QCPBarsDataContainer);
+
     connect(mSerial, &QSerialPort::readyRead,
                 this, &MainWindow::serialReadyRead);
 
@@ -99,22 +103,23 @@ void MainWindow::initPlots()
 
 
     /* Setup responseTime plot */
-    QCPBars *rtBars = new QCPBars(ui->responseTimePlot->xAxis, ui->responseTimePlot->yAxis);
-    rtBars->setName("Response time");
+    mResponseBars = new QCPBars(ui->responseTimePlot->xAxis, ui->responseTimePlot->yAxis);
+    mResponseBars->setName("Response time");
 
+    mResponseBars->setData(mResponseDataContainer);
 
-    //QVector<double> ticks;
-    //QVector<QString> labels;
-    //ticks << 1 << 2 << 3 << 4 << 5 << 6 << 7;
-    //labels << "*1*" << "*2*" << "*3*" << "*4*" << "*5*" << "*6*" << "*7*";
+    QVector<double> ticks;
+    QVector<QString> labels;
+    ticks << 0 << 1 << 2 << 3 << 4 << 5 << 6 << 7;
+    labels << "*0*" << "*1*" << "*2*" << "*3*" << "*4*" << "*5*" << "*6*" << "*7*";
     //QSharedPointer<QCPAxisTickerTime> ticker(new QCPAxisTickerTime );
-    //QSharedPointer<QCPAxisTickerText> ticker(new QCPAxisTickerText);
-    //ticker->addTicks(ticks, labels);
-    //ui->responseTimePlot->xAxis->setTicker(ticker);
-    ui->responseTimePlot->xAxis->setTickLabelRotation(0);
-    ui->responseTimePlot->xAxis->setSubTicks(false);
+    mTicker = QSharedPointer<QCPAxisTickerText>(new QCPAxisTickerText);
+    mTicker->addTicks(ticks, labels);
+    ui->responseTimePlot->xAxis->setTicker(mTicker);
+    ui->responseTimePlot->xAxis->setTickLabelRotation(60);
+    ui->responseTimePlot->xAxis->setSubTicks(true);
     ui->responseTimePlot->xAxis->setTickLength(0, 4);
-    ui->responseTimePlot->xAxis->setRange(0, 8);
+    //ui->responseTimePlot->xAxis->setRange(0, 8);
     ui->responseTimePlot->xAxis->setBasePen(QPen(Qt::black));
     ui->responseTimePlot->xAxis->setTickPen(QPen(Qt::black));
     ui->responseTimePlot->xAxis->grid()->setVisible(true);
@@ -307,10 +312,79 @@ void MainWindow::on_devConnectPushButton_clicked()
     ui->devConnectPushButton->setEnabled(true);
 }
 
+void MainWindow::redrawResponsePlots() {
+
+    double num_buckets = 100;
+
+    double min = 100000000;
+    double max = 0;
+
+    for (auto val : mResponseTimeData) {
+        if (val < min) min = val;
+        if (val > max) max = val;
+    }
+
+    double bucket_size = max / num_buckets;
+    if (bucket_size == 0) bucket_size = 1;
+
+    qDebug() << "min: " << min;
+    qDebug() << "max: " << max;
+    qDebug() << "bucket_size: " << bucket_size;
+
+    mResponseBuckets->clear(); /* Very sneaky difference between .clear and ->clear here */
+    mResponseTickVals->clear();
+
+    for (int i = 0; i < num_buckets; i ++) {
+        mResponseTickVals->append(i*bucket_size);
+        mResponseBuckets->append(0);
+    }
+    QVector<double> *vec = mResponseBuckets.get();
+    double *vec_data = vec->data();
+    for (auto val : mResponseTimeData) {
+        double bucket = val / bucket_size;
+        int index = floor(bucket);
+        qDebug() << "index: " << index;
+        vec_data[index] = vec_data[index] + 1.0; /* what a mess */
+    }
+
+    mResponseDataContainer->clear();
+    for (int i = 0; i < num_buckets; i ++) {
+        QCPBarsData d;
+        d.key = i; // mResponseTickVals->at(i);
+        d.value = mResponseBuckets->at(i);
+        mResponseDataContainer->add(d);
+    }
+    QVector<double> ticks;
+    QVector<QString> labels;
+
+    for (int i = 0; i < mResponseTickVals->size(); i ++) {
+        ticks << i;
+        labels << QString::number(mResponseTickVals->at(i));
+    }
+
+    mTicker->setTicks(ticks,labels);
+
+    //mResponseBars->senderSignalIndex()
+    //mResponseBars->setData()
+    //ui->responseTimePlot->xAxis->setRange(0, 1000);
+    //ui->responseTimePlot->xAxis->setTickLength(0, bucket_size);
+    //ui->responseTimePlot->rescaleAxes();
+    ui->responseTimePlot->replot();
+
+}
+
 void MainWindow::testerSerialReadyRead()
 {
     QByteArray data = mTesterSerial->readAll();
     QString str = QString(data);
+
+    /* It may happen that we get a partial line of communication
+     * For now just ignore these rather than trying to puzzle them
+     * together over a sequence of ReadyReads */
+    if (!str.endsWith("\n")) return; /* ignore if a malformed string */
+
+    /* Todo, Also need to deal with input that contains more than one line
+     * of data */
 
     if (str.startsWith("#RESPONSE_TEST_DONE")) {
         ui->startResponseTestPushButton->setEnabled(true);
@@ -327,6 +401,7 @@ void MainWindow::testerSerialReadyRead()
             double value = strs.at(1).toDouble(&r);
             if (r) {
                 mResponseTimeData.append(value);
+                redrawResponsePlots();
                 qDebug () << "parse OK!";
             }
         }
