@@ -370,18 +370,24 @@ void MainWindow::on_testerConnectPushButton_clicked()
     ui->testerStatusLabel->setText("Sending: init");
     mTesterSerial->write("init\n");
 
-    /* Todo: Timeout and check the boolean */
-    mTesterSerial->waitForReadyRead();
-    QByteArray response = mTesterSerial->readAll();
-    QString rstr = QString(response);
-    if (rstr == "OK!\n") {
-        ui->testerStatusLabel->setText("Tester OK!");
+    bool ready = mTesterSerial->waitForReadyRead(1000); /* 1 second timeout */
 
-        connect(mTesterSerial, &QSerialPort::readyRead,
+    if (ready) {
+        QByteArray response = mTesterSerial->readAll();
+        QString rstr = QString(response);
+        if (rstr == "OK!\n") {
+            ui->testerStatusLabel->setText("Tester OK!");
+
+            connect(mTesterSerial, &QSerialPort::readyRead,
                     this, &MainWindow::testerSerialReadyRead);
 
+        } else {
+            ui->testerStatusLabel->setText("Error: " + QString(rstr));
+            mTesterSerial->close();
+        }
     } else {
-        ui->testerStatusLabel->setText("Error: " + QString(rstr));
+        ui->testerStatusLabel->setText("Error: Could not connect to tester");
+        mTesterSerial->close();
     }
     ui->testerConnectPushButton->setEnabled(true);
 }
