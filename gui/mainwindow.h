@@ -87,10 +87,7 @@ private:
     QSharedPointer<QCPGraphDataContainer> mVoltData;
     QSharedPointer<QCPGraphDataContainer> mAmpData;
     QSharedPointer<QCPGraphDataContainer> mWattData;
-
-    QSharedPointer<QVector<double>> mResponseBuckets;
-    QSharedPointer<QVector<double>> mResponseTickVals;
-    QSharedPointer<QCPBarsDataContainer> mResponseDataContainer;
+    QSharedPointer<QCPGraphDataContainer> mResponseDataContainer;
 
     bool mScriptRunning;
     QTimer mScriptTimer;
@@ -98,7 +95,8 @@ private:
 
     bool mResponseTestRunning;
     QVector<double> mResponseTimeData;
-    QCPBars *mResponseBars;
-    QSharedPointer<QCPAxisTickerText> mTicker;
+
+    QString mTesterSerialbuffer;
+
 };
 #endif // MAINWINDOW_H

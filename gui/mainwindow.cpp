@@ -24,10 +24,6 @@ MainWindow::MainWindow(QWidget *parent)
     mSerial = new QSerialPort(this);
     mTesterSerial = new QSerialPort(this);
 
-    mResponseBuckets = QSharedPointer<QVector<double>>(new QVector<double>());
-    mResponseTickVals = QSharedPointer<QVector<double>>(new QVector<double>());
-    mResponseDataContainer = QSharedPointer<QCPBarsDataContainer>(new QCPBarsDataContainer);
-
     connect(mSerial, &QSerialPort::readyRead,
                 this, &MainWindow::serialReadyRead);
 
@@ -49,6 +45,8 @@ void MainWindow::initPlots()
     mVoltData = QSharedPointer<QCPGraphDataContainer>(new QCPGraphDataContainer);
     mAmpData = QSharedPointer<QCPGraphDataContainer>(new QCPGraphDataContainer);
     mWattData = QSharedPointer<QCPGraphDataContainer>(new QCPGraphDataContainer);
+
+    mResponseDataContainer = QSharedPointer<QCPGraphDataContainer>(new QCPGraphDataContainer);
 
     /* Setup Volt plot */
     ui->voltPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
@@ -103,31 +101,30 @@ void MainWindow::initPlots()
 
 
     /* Setup responseTime plot */
-    mResponseBars = new QCPBars(ui->responseTimePlot->xAxis, ui->responseTimePlot->yAxis);
-    mResponseBars->setName("Response time");
 
-    mResponseBars->setData(mResponseDataContainer);
 
-    QVector<double> ticks;
-    QVector<QString> labels;
-    ticks << 0 << 1 << 2 << 3 << 4 << 5 << 6 << 7;
-    labels << "*0*" << "*1*" << "*2*" << "*3*" << "*4*" << "*5*" << "*6*" << "*7*";
-    //QSharedPointer<QCPAxisTickerTime> ticker(new QCPAxisTickerTime );
-    mTicker = QSharedPointer<QCPAxisTickerText>(new QCPAxisTickerText);
-    mTicker->addTicks(ticks, labels);
-    ui->responseTimePlot->xAxis->setTicker(mTicker);
-    ui->responseTimePlot->xAxis->setTickLabelRotation(60);
-    ui->responseTimePlot->xAxis->setSubTicks(true);
-    ui->responseTimePlot->xAxis->setTickLength(0, 4);
-    //ui->responseTimePlot->xAxis->setRange(0, 8);
-    ui->responseTimePlot->xAxis->setBasePen(QPen(Qt::black));
-    ui->responseTimePlot->xAxis->setTickPen(QPen(Qt::black));
-    ui->responseTimePlot->xAxis->grid()->setVisible(true);
-    ui->responseTimePlot->xAxis->grid()->setPen(QPen(QColor(130, 130, 130), 0, Qt::DotLine));
-    ui->responseTimePlot->xAxis->setTickLabelColor(Qt::black);
-    ui->responseTimePlot->xAxis->setLabelColor(Qt::black);
+    ui->responseTimePlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+    ui->responseTimePlot->legend->setVisible(true);
+    //QFont legendFont = font();
+    //legendFont.setPointSize(10);
+    ui->responseTimePlot->legend->setFont(legendFont);
+    ui->responseTimePlot->legend->setSelectedFont(legendFont);
+    ui->responseTimePlot->legend->setSelectableParts(QCPLegend::spItems);
+    ui->responseTimePlot->yAxis->setLabel("Frequency");
+    ui->responseTimePlot->xAxis->setLabel("Time (ms)");
+    ui->responseTimePlot->clearGraphs();
+    ui->responseTimePlot->addGraph();
 
-    // ui->responseTimePlot->replot();
+
+    QPen blackPen = QPen(Qt::black);
+    blackPen.setWidth(4);
+
+
+    ui->responseTimePlot->graph()->setPen(blackPen);
+    ui->responseTimePlot->graph()->setData(mResponseDataContainer);
+    ui->responseTimePlot->graph()->setLineStyle(QCPGraph::lsImpulse); //setLineStyle(QCPGraph::lsStepLeft);
+    ui->responseTimePlot->graph()->setName("Response Time");
+
     ui->responseTimePlot->legend->setVisible(true);
     ui->responseTimePlot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignHCenter);
     ui->responseTimePlot->legend->setBrush(QColor(255, 255, 255, 100));
@@ -324,51 +321,44 @@ void MainWindow::redrawResponsePlots() {
         if (val > max) max = val;
     }
 
-    double bucket_size = max / num_buckets;
-    if (bucket_size == 0) bucket_size = 1;
-
     qDebug() << "min: " << min;
     qDebug() << "max: " << max;
+
+
+    max = max * 1.10; /* add 10 % */
+    qDebug() << "max+10%: " << max;
+
+    double bucket_size = max / num_buckets;
+    if (bucket_size == 0) bucket_size = 1;
     qDebug() << "bucket_size: " << bucket_size;
 
-    mResponseBuckets->clear(); /* Very sneaky difference between .clear and ->clear here */
-    mResponseTickVals->clear();
+    QVector<double> bucket;
+    QVector<double> bucketVal;
+
 
     for (int i = 0; i < num_buckets; i ++) {
-        mResponseTickVals->append(i*bucket_size);
-        mResponseBuckets->append(0);
+        bucketVal.append(i*bucket_size);
+        bucket.append(0);
     }
-    QVector<double> *vec = mResponseBuckets.get();
-    double *vec_data = vec->data();
+
     for (auto val : mResponseTimeData) {
-        double bucket = val / bucket_size;
-        int index = floor(bucket);
+        double b = val / bucket_size;
+        int index = floor(b);
         qDebug() << "index: " << index;
-        vec_data[index] = vec_data[index] + 1.0; /* what a mess */
+        bucket[index] = bucket[index] + 1.0;
     }
 
     mResponseDataContainer->clear();
     for (int i = 0; i < num_buckets; i ++) {
-        QCPBarsData d;
-        d.key = i; // mResponseTickVals->at(i);
-        d.value = mResponseBuckets->at(i);
+        QCPGraphData d;
+        d.key = bucketVal[i];
+        d.value = bucket[i];
         mResponseDataContainer->add(d);
     }
-    QVector<double> ticks;
-    QVector<QString> labels;
 
-    for (int i = 0; i < mResponseTickVals->size(); i ++) {
-        ticks << i;
-        labels << QString::number(mResponseTickVals->at(i));
-    }
-
-    mTicker->setTicks(ticks,labels);
-
-    //mResponseBars->senderSignalIndex()
-    //mResponseBars->setData()
     //ui->responseTimePlot->xAxis->setRange(0, 1000);
     //ui->responseTimePlot->xAxis->setTickLength(0, bucket_size);
-    //ui->responseTimePlot->rescaleAxes();
+    ui->responseTimePlot->rescaleAxes();
     ui->responseTimePlot->replot();
 
 }
@@ -378,34 +368,40 @@ void MainWindow::testerSerialReadyRead()
     QByteArray data = mTesterSerial->readAll();
     QString str = QString(data);
 
-    /* It may happen that we get a partial line of communication
-     * For now just ignore these rather than trying to puzzle them
-     * together over a sequence of ReadyReads */
-    if (!str.endsWith("\n")) return; /* ignore if a malformed string */
+    mTesterSerialbuffer.append(str);
 
-    /* Todo, Also need to deal with input that contains more than one line
-     * of data */
+    QStringList lines = mTesterSerialbuffer.split("\n");
 
-    if (str.startsWith("#RESPONSE_TEST_DONE")) {
-        ui->startResponseTestPushButton->setEnabled(true);
-        mResponseTestRunning = false;
-    }
+    for (auto l : lines) {
 
-    if (str.startsWith("#RESPONSE_LATENCY:")) {
-        QStringList strs = str.split(" ");
+        if (!l.endsWith("\r")) { /* last part is partial */
+            mTesterSerialbuffer = l;
+            break;
+        }
 
-        if (strs.size() >= 2) {
-            qDebug() << strs.at(1);
+        if (l.startsWith("#RESPONSE_TEST_DONE")) {
+            ui->startResponseTestPushButton->setEnabled(true);
+            mResponseTestRunning = false;
+            qDebug() << "Response test finished";
+        }
 
-            bool r = false;
-            double value = strs.at(1).toDouble(&r);
-            if (r) {
-                mResponseTimeData.append(value);
-                redrawResponsePlots();
-                qDebug () << "parse OK!";
+        if (l.startsWith("#RESPONSE_LATENCY:")) {
+            QStringList strs = l.split(" ");
+
+            if (strs.size() >= 2) {
+                qDebug() << strs.at(1);
+
+                bool r = false;
+                double value = strs.at(1).toDouble(&r);
+                if (r) {
+                    mResponseTimeData.append(value);
+                    redrawResponsePlots();
+                    qDebug () << "parse OK!";
+                }
             }
         }
     }
+
     //ui->logTextBrowser->insertPlainText(str);
     //QScrollBar *sb = ui->logTextBrowser->verticalScrollBar();
     //sb->setValue(sb->maximum());
@@ -634,6 +630,8 @@ void MainWindow::on_clearGraphsPushButton_clicked()
 void MainWindow::on_startResponseTestPushButton_clicked()
 {
     ui->startResponseTestPushButton->setEnabled(false);
+
+    mResponseTimeData.clear();
 
     if (mTesterSerial->isOpen()) {
         mTesterSerial->write("RSPTST\r\n");

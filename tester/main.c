@@ -102,16 +102,18 @@ static THD_WORKING_AREA(responseTestArea, 1024);
 
 bool response_test_running = false;
 
+#define NUM_TESTS 1000
+
 static THD_FUNCTION(response_tester, arg) {
   (void)arg;
   
   char s_str[256];
   timer_msg_t msg;
-  uint32_t nTests = 100;
+  uint32_t nTests = NUM_TESTS;
   
   while (true) {
     if (nTests == 0) {
-      nTests = 100;
+      nTests = NUM_TESTS;
       response_test_running = false;
       /* Test is finished */
       chprintf(chp,"#RESPONSE_TEST_DONE\r\n");
