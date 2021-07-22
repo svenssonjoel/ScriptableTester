@@ -321,12 +321,12 @@ void MainWindow::redrawResponsePlots() {
         if (val > max) max = val;
     }
 
-    qDebug() << "min: " << min;
-    qDebug() << "max: " << max;
+    //qDebug() << "min: " << min;
+    //qDebug() << "max: " << max;
 
 
     max = max * 1.10; /* add 10 % */
-    qDebug() << "max+10%: " << max;
+    //qDebug() << "max+10%: " << max;
 
     double bucket_size = max / num_buckets;
     if (bucket_size == 0) bucket_size = 1;
@@ -344,7 +344,7 @@ void MainWindow::redrawResponsePlots() {
     for (auto val : mResponseTimeData) {
         double b = val / bucket_size;
         int index = floor(b);
-        qDebug() << "index: " << index;
+        //qDebug() << "index: " << index;
         bucket[index] = bucket[index] + 1.0;
     }
 
@@ -637,4 +637,15 @@ void MainWindow::on_startResponseTestPushButton_clicked()
         mTesterSerial->write("RSPTST\r\n");
     }
 
+}
+
+void MainWindow::on_responseTimeColorPickerPushButton_clicked()
+{
+    QColor c = QColorDialog::getColor();
+
+    QPen pen = QPen(c);
+    pen.setWidth(4);
+
+    ui->responseTimePlot->graph()->setPen(pen);
+    ui->responseTimePlot->replot();
 }

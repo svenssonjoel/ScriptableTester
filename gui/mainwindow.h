@@ -63,6 +63,8 @@ private slots:
 
     void on_startResponseTestPushButton_clicked();
 
+    void on_responseTimeColorPickerPushButton_clicked();
+
 private:
     void parsePacket();
     void updateSerialPorts();
