@@ -32,6 +32,6 @@ extern void timer_init(void);
 extern void timer_reset(void);
 
 extern bool poll_mail(timer_msg_t *t);
-extern bool block_mail(timer_msg_t *t);
+extern bool block_mail(timer_msg_t *t, uint32_t timeout);
 
 #endif

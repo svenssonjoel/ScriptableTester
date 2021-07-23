@@ -40,7 +40,7 @@ static bool send_mail(timer_msg_t t) {
     
     msg_t msg_val = chMBPostI(&mb, (msg_t)m);
     if (msg_val != MSG_OK) {  /* failed to send */
-      chPoolFree(&msg_pool, m);
+      chPoolFree(&msg_pool,(void*) m);
       r = false;
     }
   }
@@ -58,24 +58,24 @@ bool poll_mail(timer_msg_t *t) {
   if (m == MSG_OK) {
     *t = *(timer_msg_t*)msg_val;
 
-    chPoolFree(&msg_pool, msg_val); /* free the pool allocated pointer */
+    chPoolFree(&msg_pool, (void*)msg_val); /* free the pool allocated pointer */
   } else {
     r = false;
   }
   return r;
 }
 
-bool block_mail(timer_msg_t *t) {
+bool block_mail(timer_msg_t *t, uint32_t timeout) {
 
   bool r = true;
   msg_t msg_val;
 
-  int m = chMBFetchTimeout(&mb, &msg_val, TIME_INFINITE);
+  int m = chMBFetchTimeout(&mb, &msg_val, chTimeMS2I(timeout));
 
   if (m == MSG_OK) {
     *t = *(timer_msg_t*)msg_val;
 
-    chPoolFree(&msg_pool, msg_val); /* free the pool allocated pointer */
+    chPoolFree(&msg_pool, (void *)msg_val); /* free the pool allocated pointer */
   } else {
     r = false;
   }

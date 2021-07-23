@@ -330,7 +330,7 @@ void MainWindow::redrawResponsePlots() {
 
     double bucket_size = max / num_buckets;
     if (bucket_size == 0) bucket_size = 1;
-    qDebug() << "bucket_size: " << bucket_size;
+    //qDebug() << "bucket_size: " << bucket_size;
 
     QVector<double> bucket;
     QVector<double> bucketVal;
@@ -383,22 +383,21 @@ void MainWindow::testerSerialReadyRead()
             ui->startResponseTestPushButton->setEnabled(true);
             mResponseTestRunning = false;
             qDebug() << "Response test finished";
-        }
-
-        if (l.startsWith("#RESPONSE_LATENCY:")) {
+        } else if (l.startsWith("#RESPONSE_LATENCY:")) {
             QStringList strs = l.split(" ");
 
             if (strs.size() >= 2) {
-                qDebug() << strs.at(1);
-
                 bool r = false;
                 double value = strs.at(1).toDouble(&r);
                 if (r) {
                     mResponseTimeData.append(value);
                     redrawResponsePlots();
-                    qDebug () << "parse OK!";
                 }
             }
+        } else if (l.startsWith("#RESPONSE_TESTS_ERROR")) {
+            ui->startResponseTestPushButton->setEnabled(true);
+            mResponseTestRunning = false;
+            qDebug() << "Response test error!";
         }
     }
 
@@ -634,7 +633,15 @@ void MainWindow::on_startResponseTestPushButton_clicked()
     mResponseTimeData.clear();
 
     if (mTesterSerial->isOpen()) {
-        mTesterSerial->write("RSPTST\r\n");
+
+        uint32_t num_tests = ui->responseNumSamplesSpinBox->value();
+        uint32_t timeout   = ui->responseTimeoutSpinBox->value();
+
+        QString str = QString("RSPTST ") + QString::number(num_tests) + " " + QString::number(timeout) + "\r\n";
+
+        qDebug() << str;
+
+        mTesterSerial->write(str.toLocal8Bit()); //"RSPTST\r\n");
     }
 
 }

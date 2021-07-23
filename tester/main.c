@@ -79,7 +79,7 @@ static THD_FUNCTION(mailman, arg) {
   while (true) {
     timer_msg_t msg;
 
-    if (block_mail(&msg) ) {
+    if (block_mail(&msg, 1000) ) {
 
       chprintf(chp,"You got mail!\r\n");
       chprintf(chp,"start: %u\r\n", msg.start);
@@ -102,57 +102,87 @@ static THD_WORKING_AREA(responseTestArea, 1024);
 
 bool response_test_running = false;
 
-#define NUM_TESTS 1000
+
+static volatile uint32_t num_tests = 1000;
+static volatile uint32_t response_timeout = 1000;
+
+#define RESPONSE_TEST_RUNNING 2
+#define RESPONSE_TEST_IDLE    0
+#define RESPONSE_TEST_INIT    1
 
 static THD_FUNCTION(response_tester, arg) {
   (void)arg;
   
   char s_str[256];
   timer_msg_t msg;
-  uint32_t nTests = NUM_TESTS;
+  uint32_t nTests = num_tests;
+  uint32_t timeout = response_timeout;
+  
+  uint32_t state = RESPONSE_TEST_IDLE;
   
   while (true) {
-    if (nTests == 0) {
-      nTests = NUM_TESTS;
-      response_test_running = false;
-      /* Test is finished */
-      chprintf(chp,"#RESPONSE_TEST_DONE\r\n");
-    } else if (response_test_running) {
-
-      /* Set up for a test */
-      palWritePad(GPIOA, 2, 0);
-
-      /* wait for GPIOA 0 and GPIOA 1 to both read 0. */
+    switch(state) {
+    case RESPONSE_TEST_IDLE:
       
-      while (palReadPad(GPIOA, 0) || palReadPad(GPIOA, 1));
-      
-      timer_reset();
-      
-      /* take a short break */
-      chThdSleepMilliseconds(10); 
-      
-      nTests --;
-      /* Initiate a response test by writing a one to GPIOA 2 */
-      palWritePad(GPIOA, 2, 1);
-      
-      if (block_mail(&msg) ) {
-	double ticks = msg.stop - msg.start;
-	double sec  = ticks / 84000.0; /* ticks per millisecond */
-	snprintf(s_str,256, "%f", sec);
-	chprintf(chp,"#RESPONSE_LATENCY: %s\r\n", s_str);
-
-	/* We had a response, so prepare for the next test */
+      if (response_test_running) {
+	state = RESPONSE_TEST_INIT;
       } else {
-	/* Error in reading from mailbox */
-	
+	chThdSleepMilliseconds(250);
       }
-    } else {
-      /* sleep for a quarter second */
-      chThdSleepMilliseconds(250);
+      break;
+    case RESPONSE_TEST_INIT:
+      
+      nTests = num_tests;
+      timeout = response_timeout;
+      state = RESPONSE_TEST_RUNNING;
+       
+      break;
+    case RESPONSE_TEST_RUNNING:
+      if (nTests == 0) {
+	response_test_running = false;
+	state = RESPONSE_TEST_IDLE;
+	/* Test is finished */
+	chprintf(chp,"#RESPONSE_TEST_DONE\r\n");
+      } else if (response_test_running) {
+
+	/* Set up for a test */
+	palWritePad(GPIOA, 2, 0);
+	
+	/* wait for GPIOA 0 and GPIOA 1 to both read 0. */
+
+	/* Todo: do not wait forever here if SUT is misbehaving */
+	while (palReadPad(GPIOA, 0) || palReadPad(GPIOA, 1));
+	
+	timer_reset();
+      
+	/* take a short break */
+	chThdSleepMilliseconds(10);
+	
+	nTests --;
+	/* Initiate a response test by writing a one to GPIOA 2 */
+	palWritePad(GPIOA, 2, 1);
+	
+	if (block_mail(&msg, response_timeout) ) {
+	  double ticks = msg.stop - msg.start;
+	  double sec  = ticks / 84000.0; /* ticks per millisecond */
+	  snprintf(s_str,256, "%f", sec);
+	  chprintf(chp,"#RESPONSE_LATENCY: %s\r\n", s_str);
+	  
+	  /* We had a response, so prepare for the next test */
+	} else {
+	  state = 1323; 
+	}
+      }
+      break;
+    default :
+      chprintf(chp,"#RESPONSE_TEST_ERROR %d\r\n", state);
+      state = RESPONSE_TEST_IDLE;
+      response_test_running = false;
+      break; /* end the tests */
     }
   }
 }
-
+  
 
 int main(void) {
   halInit();
@@ -240,7 +270,19 @@ int main(void) {
     } else if (strncmp(input_buf, "RSPTST", 6) == 0) {
       /* Start a response time test (if it is not already running) */
       if (!response_test_running) {
-	response_test_running = true;
+	char *cmd = strtok(input_buf, " ");
+	char *s_arg0 = strtok(NULL, " ");
+	char *s_arg1 = strtok(NULL, " ");
+	char *s_null = strtok(NULL, " ");
+
+	if (!s_arg0 || !s_arg1) {
+	  chprintf(chp, "RSPTST incorrect arguments\r\n");
+	} else {
+
+	  num_tests = (uint32_t)atoi(s_arg0);
+	  response_timeout   = (uint32_t)atoi(s_arg1);
+	  response_test_running = true;
+	}
       } else {
 	chprintf(chp, "RSPTST already running\r\n");
       }
