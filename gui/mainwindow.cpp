@@ -394,7 +394,7 @@ void MainWindow::testerSerialReadyRead()
                     redrawResponsePlots();
                 }
             }
-        } else if (l.startsWith("#RESPONSE_TESTS_ERROR")) {
+        } else if (l.startsWith("#RESPONSE_TEST_ERROR")) {
             ui->startResponseTestPushButton->setEnabled(true);
             mResponseTestRunning = false;
             qDebug() << "Response test error!";
