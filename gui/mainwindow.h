@@ -65,6 +65,10 @@ private slots:
 
     void on_responseTimeColorPickerPushButton_clicked();
 
+    void on_pushButton_clicked();
+
+    void on_responseTimeBucketsSpinBox_editingFinished();
+
 private:
     void parsePacket();
     void updateSerialPorts();

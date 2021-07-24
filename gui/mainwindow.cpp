@@ -311,7 +311,7 @@ void MainWindow::on_devConnectPushButton_clicked()
 
 void MainWindow::redrawResponsePlots() {
 
-    double num_buckets = 100;
+    double num_buckets = ui->responseTimeBucketsSpinBox->value();
 
     double min = 100000000;
     double max = 0;
@@ -655,4 +655,14 @@ void MainWindow::on_responseTimeColorPickerPushButton_clicked()
 
     ui->responseTimePlot->graph()->setPen(pen);
     ui->responseTimePlot->replot();
+}
+
+void MainWindow::on_pushButton_clicked()
+{
+    redrawResponsePlots();
+}
+
+void MainWindow::on_responseTimeBucketsSpinBox_editingFinished()
+{
+    redrawResponsePlots();
 }
