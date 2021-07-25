@@ -20,6 +20,7 @@ MainWindow::MainWindow(QWidget *parent)
     mScriptData.samples.clear();
     mResponseTestRunning = false;
     mResponseTimeData.clear();
+    mResponseNumFaulty = 0;
 
     mSerial = new QSerialPort(this);
     mTesterSerial = new QSerialPort(this);
@@ -394,6 +395,9 @@ void MainWindow::testerSerialReadyRead()
                     redrawResponsePlots();
                 }
             }
+        } else if (l.startsWith("#RESPONSE_MALFORMED")) {
+            mResponseNumFaulty ++;
+            ui->responseNumFaultyLabel->setText(QString::number(mResponseNumFaulty));
         } else if (l.startsWith("#RESPONSE_TEST_ERROR")) {
             ui->startResponseTestPushButton->setEnabled(true);
             mResponseTestRunning = false;
@@ -631,6 +635,8 @@ void MainWindow::on_startResponseTestPushButton_clicked()
     ui->startResponseTestPushButton->setEnabled(false);
 
     mResponseTimeData.clear();
+    mResponseNumFaulty = 0;
+    ui->responseNumFaultyLabel->setText("0");
 
     if (mTesterSerial->isOpen()) {
 
@@ -657,12 +663,12 @@ void MainWindow::on_responseTimeColorPickerPushButton_clicked()
     ui->responseTimePlot->replot();
 }
 
-void MainWindow::on_pushButton_clicked()
+void MainWindow::on_responseTimeBucketsSpinBox_editingFinished()
 {
     redrawResponsePlots();
 }
 
-void MainWindow::on_responseTimeBucketsSpinBox_editingFinished()
+void MainWindow::on_responseNumbucketPushButton_clicked()
 {
     redrawResponsePlots();
 }

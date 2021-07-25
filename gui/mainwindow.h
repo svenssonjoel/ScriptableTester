@@ -65,9 +65,9 @@ private slots:
 
     void on_responseTimeColorPickerPushButton_clicked();
 
-    void on_pushButton_clicked();
-
     void on_responseTimeBucketsSpinBox_editingFinished();
+
+    void on_responseNumbucketPushButton_clicked();
 
 private:
     void parsePacket();
@@ -101,6 +101,7 @@ private:
 
     bool mResponseTestRunning;
     QVector<double> mResponseTimeData;
+    uint32_t mResponseNumFaulty;
 
     QString mTesterSerialbuffer;
 

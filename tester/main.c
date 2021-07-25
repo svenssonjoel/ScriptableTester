@@ -110,6 +110,9 @@ static volatile uint32_t response_timeout = 1000;
 #define RESPONSE_TEST_IDLE    0
 #define RESPONSE_TEST_INIT    1
 
+
+/* TODO: Maybe split up TEST_RUNNING state into two 
+   separate states for test preparation and test performing */
 static THD_FUNCTION(response_tester, arg) {
   (void)arg;
   
@@ -149,9 +152,18 @@ static THD_FUNCTION(response_tester, arg) {
 	palWritePad(GPIOA, 2, 0);
 	
 	/* wait for GPIOA 0 and GPIOA 1 to both read 0. */
-
-	/* Todo: do not wait forever here if SUT is misbehaving */
-	while (palReadPad(GPIOA, 0) || palReadPad(GPIOA, 1));
+	uint32_t n = 0;
+	while (palReadPad(GPIOA, 0) || palReadPad(GPIOA, 1)) {
+	  chThdSleepMilliseconds(1);
+	  if (n++ >= response_timeout)
+	    break;	       
+	}
+	if (palReadPad(GPIOA, 0) || palReadPad(GPIOA, 1)) {
+	  state = 1777; /* Error state: SUT never lowered response pin
+	                   or connection between GPIO A2 and GPIO A0 
+                           came loose. */
+	  break;
+	}
 	
 	timer_reset();
       
@@ -162,11 +174,19 @@ static THD_FUNCTION(response_tester, arg) {
 	/* Initiate a response test by writing a one to GPIOA 2 */
 	palWritePad(GPIOA, 2, 1);
 	
-	if (block_mail(&msg, response_timeout) ) {
+	if (block_mail(&msg, timeout) ) {
 	  double ticks = msg.stop - msg.start;
 	  double sec  = ticks / 84000.0; /* ticks per millisecond */
 	  snprintf(s_str,256, "%f", sec);
-	  chprintf(chp,"#RESPONSE_LATENCY: %s\r\n", s_str);
+
+	  if ( msg.start >= msg.stop ||
+	       ticks > (timeout * 84000) ) {
+	    chprintf(chp, "#REPONSE_MALFORMED\r\n");
+	    /* Getting a large amount of malformed responses 
+	       should be a warning flag to the user */
+	  } else {	  
+	    chprintf(chp,"#RESPONSE_LATENCY: %s\r\n", s_str);
+	  }
 	  
 	  /* We had a response, so prepare for the next test */
 	} else {
@@ -275,6 +295,9 @@ int main(void) {
 	char *s_arg1 = strtok(NULL, " ");
 	char *s_null = strtok(NULL, " ");
 
+	(void) cmd;
+	(void) s_null;
+	
 	if (!s_arg0 || !s_arg1) {
 	  chprintf(chp, "RSPTST incorrect arguments\r\n");
 	} else {
