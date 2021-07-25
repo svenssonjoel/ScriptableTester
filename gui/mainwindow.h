@@ -111,7 +111,7 @@ private:
     QStringList mScript;
 
     bool mResponseTestRunning;
-    QVector<double> mResponseTimeData;
+    //QVector<double> mResponseTimeData;
     QMap<QString, ResponseTimeDataObject> mResponseTimeMap;
     uint32_t mResponseNumFaulty;
 

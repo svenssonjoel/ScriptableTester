@@ -19,7 +19,7 @@ MainWindow::MainWindow(QWidget *parent)
     mScriptRunning = false;
     mScriptData.samples.clear();
     mResponseTestRunning = false;
-    mResponseTimeData.clear();
+    //mResponseTimeData.clear();
     mResponseNumFaulty = 0;
 
     mResponseTimeMap.clear();
@@ -58,7 +58,7 @@ void MainWindow::initPlots()
     mAmpData = QSharedPointer<QCPGraphDataContainer>(new QCPGraphDataContainer);
     mWattData = QSharedPointer<QCPGraphDataContainer>(new QCPGraphDataContainer);
 
-    mResponseDataContainer = QSharedPointer<QCPGraphDataContainer>(new QCPGraphDataContainer);
+    //mResponseDataContainer = QSharedPointer<QCPGraphDataContainer>(new QCPGraphDataContainer);
 
     /* Setup Volt plot */
     ui->voltPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
@@ -126,16 +126,6 @@ void MainWindow::initPlots()
     ui->responseTimePlot->xAxis->setLabel("Time (ms)");
     ui->responseTimePlot->clearGraphs();
     ui->responseTimePlot->addGraph();
-
-
-    QPen blackPen = QPen(Qt::black);
-    blackPen.setWidth(4);
-
-
-    ui->responseTimePlot->graph(0)->setPen(blackPen);
-    ui->responseTimePlot->graph(0)->setData(mResponseDataContainer);
-    ui->responseTimePlot->graph(0)->setLineStyle(QCPGraph::lsImpulse); //setLineStyle(QCPGraph::lsStepLeft);
-    ui->responseTimePlot->graph(0)->setName("Response Time");
 
     ui->responseTimePlot->legend->setVisible(true);
     ui->responseTimePlot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignHCenter);
@@ -323,49 +313,55 @@ void MainWindow::on_devConnectPushButton_clicked()
 
 void MainWindow::redrawResponsePlots() {
 
-    double num_buckets = ui->responseTimeBucketsSpinBox->value();
-
-    double min = 100000000;
-    double max = 0;
-
-    for (auto val : mResponseTimeData) {
-        if (val < min) min = val;
-        if (val > max) max = val;
+    for (int i = 0; i < ui->responseTimePlot->graphCount(); i ++) {
+        ui->responseTimePlot->removeGraph(i); /* does it renumber after removal of 0 ? */
     }
+    ui->responseTimePlot->legend->clearItems();
 
-    //qDebug() << "min: " << min;
-    //qDebug() << "max: " << max;
+    double min = 4000000;
+    double max = -4000000;
 
+    for (auto g : mResponseTimeMap) { /* min max over all data sets */
+        if (g.getMax() > max) max = g.getMax();
+        if (g.getMin() < min) min = g.getMin();
+    }
+    max = max * 1.10;
 
-    max = max * 1.10; /* add 10 % */
-    //qDebug() << "max+10%: " << max;
+    double num_buckets = ui->responseTimeBucketsSpinBox->value();
 
     double bucket_size = max / num_buckets;
     if (bucket_size == 0) bucket_size = 1;
     //qDebug() << "bucket_size: " << bucket_size;
 
-    QVector<double> bucket;
-    QVector<double> bucketVal;
+    for (auto g : mResponseTimeMap) {
 
+        QColor c = g.color();
+        QString name = g.name();
 
-    for (int i = 0; i < num_buckets; i ++) {
-        bucketVal.append(i*bucket_size);
-        bucket.append(0);
-    }
+        QPen pen = QPen(c);
+        pen.setWidth(4);
 
-    for (auto val : mResponseTimeData) {
-        double b = val / bucket_size;
-        int index = floor(b);
-        //qDebug() << "index: " << index;
-        bucket[index] = bucket[index] + 1.0;
-    }
+        ui->responseTimePlot->addGraph();
+        ui->responseTimePlot->graph()->setPen(pen);
+        ui->responseTimePlot->graph()->setLineStyle(QCPGraph::lsImpulse); //setLineStyle(QCPGraph::lsStepLeft);
+        ui->responseTimePlot->graph()->setName(g.name());
 
-    mResponseDataContainer->clear();
-    for (int i = 0; i < num_buckets; i ++) {
-        QCPGraphData d;
-        d.key = bucketVal[i];
-        d.value = bucket[i];
-        mResponseDataContainer->add(d);
+        QVector<double> bucket;
+        QVector<double> bucketVal;
+
+        for (int i = 0; i < num_buckets; i ++) {
+            bucketVal.append(i*bucket_size);
+            bucket.append(0);
+        }
+
+        for (auto val : g.data()) {
+            double b = val / bucket_size;
+            int index = floor(b);
+            //qDebug() << "index: " << index;
+            bucket[index] = bucket[index] + 1.0;
+        }
+
+        ui->responseTimePlot->graph()->setData(bucketVal,bucket);
     }
 
     //ui->responseTimePlot->xAxis->setRange(0, 1000);
@@ -402,7 +398,10 @@ void MainWindow::testerSerialReadyRead()
                 bool r = false;
                 double value = strs.at(1).toDouble(&r);
                 if (r) {
-                    mResponseTimeData.append(value);
+                    QString activeGraph = ui->responseActiveChartComboBox->currentText();
+                    mResponseTimeMap[activeGraph].append(value); /* bit sneaky */
+
+                    //mResponseTimeData.append(value);
                     redrawResponsePlots();
                 }
             }
@@ -645,7 +644,10 @@ void MainWindow::on_startResponseTestPushButton_clicked()
 {
     ui->startResponseTestPushButton->setEnabled(false);
 
-    mResponseTimeData.clear();
+    //mResponseTimeData.clear();
+    QString activeGraph = ui->responseActiveChartComboBox->currentText();
+    mResponseTimeMap[activeGraph].clear(); /* bit sneaky */
+
     mResponseNumFaulty = 0;
     ui->responseNumFaultyLabel->setText("0");
 
@@ -666,12 +668,10 @@ void MainWindow::on_startResponseTestPushButton_clicked()
 void MainWindow::on_responseTimeColorPickerPushButton_clicked()
 {
     QColor c = QColorDialog::getColor();
+    QString name = ui->responseActiveChartComboBox->currentText();
 
-    QPen pen = QPen(c);
-    pen.setWidth(4);
-
-    ui->responseTimePlot->graph()->setPen(pen);
-    ui->responseTimePlot->replot();
+    mResponseTimeMap[name].setColor(c);
+    redrawResponsePlots();
 }
 
 void MainWindow::on_responseTimeBucketsSpinBox_editingFinished()
@@ -718,7 +718,15 @@ void MainWindow::on_responseRenameChartPushButton_clicked()
                                          tr("Chart Name:"), QLineEdit::Normal,
                                          "", &ok);
     if (ok && !text.isEmpty()) {
-        //ui->responseActiveChartComboBox->currentData()
+        QString old = ui->responseActiveChartComboBox->currentText();
+        ResponseTimeDataObject o = mResponseTimeMap[old];
+        o.setName(text);
+        mResponseTimeMap.remove(old);
+        mResponseTimeMap.insert(text,o);
+        int index = ui->responseActiveChartComboBox->findText(old);
+        ui->responseActiveChartComboBox->removeItem(index);
+        ui->responseActiveChartComboBox->addItem(text);
+        redrawResponsePlots();
     }
 
 }
