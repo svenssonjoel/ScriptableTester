@@ -6,6 +6,7 @@
 #include <QSerialPortInfo>
 #include <QTimer>
 #include "qcustomplot.h"
+#include "responsetimedataobject.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -69,6 +70,16 @@ private slots:
 
     void on_responseNumbucketPushButton_clicked();
 
+    void on_responseExportPDFPushButton_clicked();
+
+    void on_responseAddChartPushButton_clicked();
+
+    void on_responseRenameChartPushButton_clicked();
+
+    void on_responseActiveChartComboBox_textActivated(const QString &arg1);
+
+    void on_responseActiveChartComboBox_currentIndexChanged(const QString &arg1);
+
 private:
     void parsePacket();
     void updateSerialPorts();
@@ -101,6 +112,7 @@ private:
 
     bool mResponseTestRunning;
     QVector<double> mResponseTimeData;
+    QMap<QString, ResponseTimeDataObject> mResponseTimeMap;
     uint32_t mResponseNumFaulty;
 
     QString mTesterSerialbuffer;

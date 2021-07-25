@@ -22,6 +22,17 @@ MainWindow::MainWindow(QWidget *parent)
     mResponseTimeData.clear();
     mResponseNumFaulty = 0;
 
+    mResponseTimeMap.clear();
+
+    ResponseTimeDataObject rtdo;
+    rtdo.setName("default");
+    rtdo.clear();
+
+    mResponseTimeMap.insert(rtdo.name(),rtdo);
+
+    ui->responseActiveChartComboBox->addItem(rtdo.name());
+
+
     mSerial = new QSerialPort(this);
     mTesterSerial = new QSerialPort(this);
 
@@ -57,7 +68,7 @@ void MainWindow::initPlots()
     ui->voltPlot->legend->setFont(legendFont);
     ui->voltPlot->legend->setSelectedFont(legendFont);
     ui->voltPlot->legend->setSelectableParts(QCPLegend::spItems);
-    ui->voltPlot->yAxis->setLabel("Volt");
+    ui->voltPlot->yAxis->setLabel("V");
     ui->voltPlot->xAxis->setLabel("Sample");
     ui->voltPlot->clearGraphs();
     ui->voltPlot->addGraph();
@@ -121,10 +132,10 @@ void MainWindow::initPlots()
     blackPen.setWidth(4);
 
 
-    ui->responseTimePlot->graph()->setPen(blackPen);
-    ui->responseTimePlot->graph()->setData(mResponseDataContainer);
-    ui->responseTimePlot->graph()->setLineStyle(QCPGraph::lsImpulse); //setLineStyle(QCPGraph::lsStepLeft);
-    ui->responseTimePlot->graph()->setName("Response Time");
+    ui->responseTimePlot->graph(0)->setPen(blackPen);
+    ui->responseTimePlot->graph(0)->setData(mResponseDataContainer);
+    ui->responseTimePlot->graph(0)->setLineStyle(QCPGraph::lsImpulse); //setLineStyle(QCPGraph::lsStepLeft);
+    ui->responseTimePlot->graph(0)->setName("Response Time");
 
     ui->responseTimePlot->legend->setVisible(true);
     ui->responseTimePlot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignHCenter);
@@ -671,4 +682,53 @@ void MainWindow::on_responseTimeBucketsSpinBox_editingFinished()
 void MainWindow::on_responseNumbucketPushButton_clicked()
 {
     redrawResponsePlots();
+}
+
+void MainWindow::on_responseExportPDFPushButton_clicked()
+{
+    QString file_name = QFileDialog::getSaveFileName(this, "Save as PDF");
+    if (!file_name.isNull())
+    {
+        ui->responseTimePlot->savePdf(file_name);
+    }
+}
+
+void MainWindow::on_responseAddChartPushButton_clicked()
+{
+    bool ok;
+    QString text = QInputDialog::getText(this, tr("New Chart"),
+                                         tr("Chart Name:"),
+                                         QLineEdit::Normal,
+                                         "default", &ok);
+
+    ResponseTimeDataObject rtdo;
+    rtdo.setName(text);
+    rtdo.clear();
+    mResponseTimeMap.insert(rtdo.name(), rtdo);
+    ui->responseActiveChartComboBox->addItem(rtdo.name());
+    ui->responseActiveChartComboBox->setCurrentText(rtdo.name());
+    //if (ok && !text.isEmpty())
+    //    textLabel->setText(text);
+}
+
+void MainWindow::on_responseRenameChartPushButton_clicked()
+{
+    bool ok;
+    QString text = QInputDialog::getText(this, tr("Rename Chart"),
+                                         tr("Chart Name:"), QLineEdit::Normal,
+                                         "", &ok);
+    if (ok && !text.isEmpty()) {
+        //ui->responseActiveChartComboBox->currentData()
+    }
+
+}
+
+void MainWindow::on_responseActiveChartComboBox_textActivated(const QString &arg1)
+{
+    qDebug() << "text activated";
+}
+
+void MainWindow::on_responseActiveChartComboBox_currentIndexChanged(const QString &arg1)
+{
+    ui->responseActiveChartLabel->setText(arg1);
 }
