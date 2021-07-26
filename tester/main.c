@@ -68,36 +68,6 @@ int inputline(BaseSequentialStream *chp, char *buffer, int size) {
   return 0; // Filled up buffer without reading a linebreak
 }
 
-static THD_WORKING_AREA(mailmanArea, 1024);
-
-static THD_FUNCTION(mailman, arg) {
-
-  (void)arg;
-
-  char s_str[256];
-  
-  while (true) {
-    timer_msg_t msg;
-
-    if (block_mail(&msg, 1000) ) {
-
-      chprintf(chp,"You got mail!\r\n");
-      chprintf(chp,"start: %u\r\n", msg.start);
-      chprintf(chp,"stop:  %u\r\n", msg.stop);
-      chprintf(chp,"diff ticks: %u\r\n", msg.stop - msg.start);
-      double ticks = msg.stop - msg.start;
-      double sec  = ticks / 84000000.0; /* ticks per second */
-      snprintf(s_str,256, "%f s", sec);
-      chprintf(chp,"time: %s\r\n", s_str);
-      timer_reset(); 
-    } else {
-      /* Error: something wrong with messaging */
-      //chprintf(chp, "no message\r\n");
-    }
-  }
-}
-
-
 static THD_WORKING_AREA(responseTestArea, 1024);
 
 bool response_test_running = false;
@@ -225,13 +195,6 @@ int main(void) {
 
   chThdSleepMilliseconds(2000);
   chp = (BaseSequentialStream*)&SDU1;
-
-  /* Start up the mailman */
-  //chprintf(chp,"Starting up the mailman\r\n");
-  //(void)chThdCreateStatic(mailmanArea,
-  //			  sizeof(mailmanArea),
-  //			  NORMALPRIO,
-  //			  mailman, NULL);
   
   chprintf(chp,"Starting up response time tester\r\n");
   (void)chThdCreateStatic(responseTestArea,
