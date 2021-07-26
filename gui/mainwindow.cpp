@@ -731,12 +731,17 @@ void MainWindow::on_responseRenameChartPushButton_clicked()
 
 }
 
-void MainWindow::on_responseActiveChartComboBox_textActivated(const QString &arg1)
-{
-    qDebug() << "text activated";
-}
-
 void MainWindow::on_responseActiveChartComboBox_currentIndexChanged(const QString &arg1)
 {
     ui->responseActiveChartLabel->setText(arg1);
+}
+
+void MainWindow::on_responseLoadDataPushButton_clicked()
+{
+
+}
+
+void MainWindow::on_responseSaveDataPushButton_clicked()
+{
+
 }

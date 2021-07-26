@@ -582,9 +582,16 @@
           </widget>
          </item>
          <item row="3" column="5">
-          <widget class="QPushButton" name="pushButton">
+          <widget class="QPushButton" name="responseLoadDataPushButton">
            <property name="text">
             <string>Load Data</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="5">
+          <widget class="QPushButton" name="responseStopPushButton">
+           <property name="text">
+            <string>Stop</string>
            </property>
           </widget>
          </item>

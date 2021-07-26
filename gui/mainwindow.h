@@ -76,9 +76,11 @@ private slots:
 
     void on_responseRenameChartPushButton_clicked();
 
-    void on_responseActiveChartComboBox_textActivated(const QString &arg1);
-
     void on_responseActiveChartComboBox_currentIndexChanged(const QString &arg1);
+
+    void on_responseLoadDataPushButton_clicked();
+
+    void on_responseSaveDataPushButton_clicked();
 
 private:
     void parsePacket();
