@@ -62,3 +62,9 @@ Scanning ...
 
 ## Future work
 
+Can we do the following using an STM32 and what kind of performance does it have in these cases?
+
+1. Can we implement a frequency counter? To see what frequencies the SUT can generate (square wave). 
+2. Implement a signal generator to provide periodic signals to the SUT as stimuli. 
+3. Analog signal to send to SUT, can we do something fun with that? 
+3. Sample analog signal from SUT?
