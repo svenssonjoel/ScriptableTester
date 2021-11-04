@@ -716,14 +716,11 @@ void MainWindow::on_responseAddChartPushButton_clicked()
 
 void MainWindow::on_responseRemoveChartPushButton_clicked()
 {
-    bool ok;
-    QString text = QInputDialog::getText(this, tr("New Chart"),
-                                         tr("Chart Name:"),
-                                         QLineEdit::Normal,
-                                         "default", &ok);
+    QString name = ui->responseActiveChartComboBox->currentText();
+    int index = ui->responseActiveChartComboBox->currentIndex();
+    ui->responseActiveChartComboBox->removeItem(index);
 
-
-    mResponseTimeMap.remove(text);
+    mResponseTimeMap.remove(name);
 }
 
 
