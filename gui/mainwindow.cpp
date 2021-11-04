@@ -7,6 +7,11 @@
 #include <QScrollBar>
 #include <QDateTime>
 
+#define INDEX_S  3
+#define INDEX_MS 2
+#define INDEX_US 1
+#define INDEX_NS 0
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -45,6 +50,17 @@ MainWindow::MainWindow(QWidget *parent)
     mPacket.clear();
 
     initPlots();
+
+
+    /* Initiailize unit selections */
+
+    ui->unitSelectionComboBox->insertItem(0,"ns");
+    ui->unitSelectionComboBox->insertItem(1,"us");
+    ui->unitSelectionComboBox->insertItem(2,"ms");
+    ui->unitSelectionComboBox->insertItem(3,"s");
+
+    ui->unitSelectionComboBox->setCurrentIndex(3);
+
 }
 
 MainWindow::~MainWindow()
@@ -318,6 +334,33 @@ void MainWindow::redrawResponsePlots() {
     }
     ui->responseTimePlot->legend->clearItems();
 
+    /* get the unit to use */
+
+    double unit_multiplier = 0.001; /* seconds to milliseconds */
+
+
+    switch(ui->unitSelectionComboBox->currentIndex()) {
+    case INDEX_S:
+        unit_multiplier = 0.001;
+        ui->responseTimePlot->xAxis->setLabel("Time (s)");
+        break;
+    case INDEX_MS:
+        unit_multiplier = 1;
+        ui->responseTimePlot->xAxis->setLabel("Time (ms)");
+        break;
+    case INDEX_US:
+        unit_multiplier = 1000;
+        ui->responseTimePlot->xAxis->setLabel("Time (us)");
+        break;
+    case INDEX_NS:
+        unit_multiplier = 1000000;
+        ui->responseTimePlot->xAxis->setLabel("Time (ns)");
+        break;
+    }
+
+
+
+
     double min = 4000000;
     double max = -4000000;
 
@@ -329,7 +372,7 @@ void MainWindow::redrawResponsePlots() {
 
     double num_buckets = ui->responseTimeBucketsSpinBox->value();
 
-    double bucket_size = max / num_buckets;
+    double bucket_size = (max * unit_multiplier) / num_buckets;
     if (bucket_size == 0) bucket_size = 1;
     //qDebug() << "bucket_size: " << bucket_size;
 
@@ -355,7 +398,7 @@ void MainWindow::redrawResponsePlots() {
         }
 
         for (auto val : g.data()) {
-            double b = val / bucket_size;
+            double b = (val * unit_multiplier) / bucket_size;
             int index = floor(b);
             //qDebug() << "index: " << index;
             bucket[index] = bucket[index] + 1.0;
@@ -765,3 +808,8 @@ void MainWindow::on_responseNumSamplesSpinBox_valueChanged(const QString &arg1)
 
 }
 
+
+void MainWindow::on_unitSelectionComboBox_currentIndexChanged(int index)
+{
+    redrawResponsePlots();
+}

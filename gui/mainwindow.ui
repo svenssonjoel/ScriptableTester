@@ -445,7 +445,7 @@
           <x>50</x>
           <y>410</y>
           <width>684</width>
-          <height>92</height>
+          <height>93</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_10">
@@ -582,6 +582,20 @@
             <string>Stop</string>
            </property>
           </widget>
+         </item>
+         <item row="2" column="4">
+          <layout class="QHBoxLayout" name="horizontalLayout_10">
+           <item>
+            <widget class="QComboBox" name="unitSelectionComboBox"/>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_9">
+             <property name="text">
+              <string>Unit</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
        </widget>

@@ -86,6 +86,8 @@ private slots:
 
     void on_responseRemoveChartPushButton_clicked();
 
+    void on_unitSelectionComboBox_currentIndexChanged(int index);
+
 private:
     void parsePacket();
     void updateSerialPorts();
