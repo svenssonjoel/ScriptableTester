@@ -84,6 +84,8 @@ private slots:
 
     void on_responseNumSamplesSpinBox_valueChanged(const QString &arg1);
 
+    void on_responseRemoveChartPushButton_clicked();
+
 private:
     void parsePacket();
     void updateSerialPorts();

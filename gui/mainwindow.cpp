@@ -714,6 +714,20 @@ void MainWindow::on_responseAddChartPushButton_clicked()
     //    textLabel->setText(text);
 }
 
+void MainWindow::on_responseRemoveChartPushButton_clicked()
+{
+    bool ok;
+    QString text = QInputDialog::getText(this, tr("New Chart"),
+                                         tr("Chart Name:"),
+                                         QLineEdit::Normal,
+                                         "default", &ok);
+
+
+    mResponseTimeMap.remove(text);
+}
+
+
+
 void MainWindow::on_responseRenameChartPushButton_clicked()
 {
     bool ok;
@@ -753,3 +767,4 @@ void MainWindow::on_responseNumSamplesSpinBox_valueChanged(const QString &arg1)
 {
 
 }
+
