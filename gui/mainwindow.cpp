@@ -415,9 +415,12 @@ void MainWindow::testerSerialReadyRead()
         }
     }
 
-    //ui->logTextBrowser->insertPlainText(str);
-    //QScrollBar *sb = ui->logTextBrowser->verticalScrollBar();
-    //sb->setValue(sb->maximum());
+    if (mLogging) {
+        ui->logTextBrowser->insertPlainText(str);
+        QScrollBar *sb = ui->logTextBrowser->verticalScrollBar();
+        sb->setValue(sb->maximum());
+    }
+
     //qDebug() << QString(data);
 }
 
@@ -742,6 +745,11 @@ void MainWindow::on_responseLoadDataPushButton_clicked()
 }
 
 void MainWindow::on_responseSaveDataPushButton_clicked()
+{
+
+}
+
+void MainWindow::on_responseNumSamplesSpinBox_valueChanged(const QString &arg1)
 {
 
 }

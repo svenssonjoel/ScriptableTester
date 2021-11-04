@@ -135,7 +135,7 @@ void timer_init(void) {
   tim5->CCR[3] = 0x0; 
 
   tim5->CCMR1 = 0x0;
-  tim5->CCMR1 |= 0xF000F000;
+  //tim5->CCMR1 |= 0xF000F000; /* filter sample rate */
   //tim5->CCMR1 &= 0xFFFFFFFC; /* Clear two bits */
   tim5->CCMR1 |= 0x00000001; /* CC1S = 01, input IC1 -> TI1 */
   //tim5->CCMR1 &= 0xFFFFFCFF; /* Clear two bits */
@@ -146,7 +146,7 @@ void timer_init(void) {
   tim5->CCER &= 0xFFFFFF2F; /* clear some */
   tim5->CCER |= 0x00000010; /* activate capture on channel 2 */ 
 
-  tim5->OR &= 0xFFFFFF9F;
+  //tim5->OR &= 0xFFFFFF9F;
   
   tim5->DIER |= 0x4; 
   
@@ -158,12 +158,12 @@ void timer_init(void) {
 
 void timer_reset(void) {
 
-  tim5->CR1 &= ~0x1; /* Disable counter */
-  tim5->CNT = 0x0;   /* Clear count */
+  //tim5->CR1 &= ~0x1; /* Disable counter */
+  //tim5->CNT = 0x0;   /* Clear count */
   tim5->CCR[0] = 0;
   tim5->CCR[1] = 0;
-  tim5->EGR = 0x1;   /* Maybe not needed */ 
-  tim5->CR1 |= 0x1;  /* Start timer */
+  //tim5->EGR = 0x1;   /* Maybe not needed */ 
+  //tim5->CR1 |= 0x1;  /* Start timer */
 }
 
 uint32_t pin_state = 0;
@@ -175,15 +175,11 @@ OSAL_IRQ_HANDLER(STM32_TIM5_HANDLER) {
   sr &= tim5->DIER & STM32_TIM_DIER_IRQ_MASK;
   tim5->SR = ~sr;  
 
+ 
   timer_msg_t msg;
   msg.start = tim5->CCR[0];
   msg.stop  = tim5->CCR[1];
-
-
-  timer_reset();
-  palWritePad(GPIOA, 2, pin_state);
-  pin_state = 1 - pin_state;
-    
+  
   osalSysLockFromISR();
   send_mail(msg);
   osalSysUnlockFromISR();

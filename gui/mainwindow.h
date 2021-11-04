@@ -82,6 +82,8 @@ private slots:
 
     void on_responseSaveDataPushButton_clicked();
 
+    void on_responseNumSamplesSpinBox_valueChanged(const QString &arg1);
+
 private:
     void parsePacket();
     void updateSerialPorts();

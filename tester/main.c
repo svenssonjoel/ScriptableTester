@@ -88,6 +88,7 @@ static THD_FUNCTION(response_tester, arg) {
   
   char s_str[256];
   timer_msg_t msg;
+  timer_msg_t nonsense;
   uint32_t nTests = num_tests;
   uint32_t timeout = response_timeout;
   
@@ -136,18 +137,26 @@ static THD_FUNCTION(response_tester, arg) {
 	}
 	
 	timer_reset();
-      
+
 	/* take a short break */
-	chThdSleepMilliseconds(10);
+	chThdSleepMilliseconds(15);
 	
 	nTests --;
+	
+	/* clear mailbox */
+	while (poll_mail(&nonsense));
+
 	/* Initiate a response test by writing a one to GPIOA 2 */
 	palWritePad(GPIOA, 2, 1);
 	
 	if (block_mail(&msg, timeout) ) {
 	  double ticks = msg.stop - msg.start;
+
+	  // chprintf(chp," start: %u\n", msg.start);
+	  //chprintf(chp," stop:  %u\n", msg.stop);
+	  //chprintf(chp," ticks: %u\n", msg.stop - msg.start);
 	  double sec  = ticks / 84000.0; /* ticks per millisecond */
-	  snprintf(s_str,256, "%f", sec);
+	  snprintf(s_str,256, "%lf", sec);
 
 	  if ( msg.start >= msg.stop ||
 	       ticks > (timeout * 84000) ) {
