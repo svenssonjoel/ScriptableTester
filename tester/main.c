@@ -81,23 +81,23 @@ static volatile uint32_t response_timeout = 1000;
 #define RESPONSE_TEST_INIT    1
 
 
-/* TODO: Maybe split up TEST_RUNNING state into two 
+/* TODO: Maybe split up TEST_RUNNING state into two
    separate states for test preparation and test performing */
 static THD_FUNCTION(response_tester, arg) {
   (void)arg;
-  
+
   char s_str[256];
   timer_msg_t msg;
   timer_msg_t nonsense;
   uint32_t nTests = num_tests;
   uint32_t timeout = response_timeout;
-  
+
   uint32_t state = RESPONSE_TEST_IDLE;
-  
+
   while (true) {
     switch(state) {
     case RESPONSE_TEST_IDLE:
-      
+
       if (response_test_running) {
 	state = RESPONSE_TEST_INIT;
       } else {
@@ -105,11 +105,11 @@ static THD_FUNCTION(response_tester, arg) {
       }
       break;
     case RESPONSE_TEST_INIT:
-      
+
       nTests = num_tests;
       timeout = response_timeout;
       state = RESPONSE_TEST_RUNNING;
-       
+
       break;
     case RESPONSE_TEST_RUNNING:
       if (nTests == 0) {
@@ -121,34 +121,34 @@ static THD_FUNCTION(response_tester, arg) {
 
 	/* Set up for a test */
 	palWritePad(GPIOA, 2, 0);
-	
+
 	/* wait for GPIOA 0 and GPIOA 1 to both read 0. */
 	uint32_t n = 0;
 	while (palReadPad(GPIOA, 0) || palReadPad(GPIOA, 1)) {
 	  chThdSleepMilliseconds(1);
 	  if (n++ >= response_timeout)
-	    break;	       
+	    break;
 	}
 	if (palReadPad(GPIOA, 0) || palReadPad(GPIOA, 1)) {
 	  state = 1777; /* Error state: SUT never lowered response pin
-	                   or connection between GPIO A2 and GPIO A0 
+	                   or connection between GPIO A2 and GPIO A0
                            came loose. */
 	  break;
 	}
-	
+
 	timer_reset();
 
 	/* take a short break */
 	chThdSleepMilliseconds(15);
-	
+
 	nTests --;
-	
+
 	/* clear mailbox */
 	while (poll_mail(&nonsense));
 
 	/* Initiate a response test by writing a one to GPIOA 2 */
 	palWritePad(GPIOA, 2, 1);
-	
+
 	if (block_mail(&msg, timeout) ) {
 	  double ticks = msg.stop - msg.start;
 
@@ -161,15 +161,15 @@ static THD_FUNCTION(response_tester, arg) {
 	  if ( msg.start >= msg.stop ||
 	       ticks > (timeout * 84000) ) {
 	    chprintf(chp, "#REPONSE_MALFORMED\r\n");
-	    /* Getting a large amount of malformed responses 
+	    /* Getting a large amount of malformed responses
 	       should be a warning flag to the user */
-	  } else {	  
+	  } else {
 	    chprintf(chp,"#RESPONSE_LATENCY: %s\r\n", s_str);
 	  }
-	  
+
 	  /* We had a response, so prepare for the next test */
 	} else {
-	  state = 1323; 
+	  state = 1323;
 	}
       }
       break;
@@ -181,7 +181,7 @@ static THD_FUNCTION(response_tester, arg) {
     }
   }
 }
-  
+
 
 int main(void) {
   halInit();
@@ -204,32 +204,33 @@ int main(void) {
 
   chThdSleepMilliseconds(2000);
   chp = (BaseSequentialStream*)&SDU1;
-  
+
+
   chprintf(chp,"Starting up response time tester\r\n");
   (void)chThdCreateStatic(responseTestArea,
-			  sizeof(responseTestArea),
-			  NORMALPRIO,
-			  response_tester, NULL); 
+  			  sizeof(responseTestArea),
+  			  NORMALPRIO,
+  			  response_tester, NULL);
 
 
   //start_spi_thread();
 
   /* TODO Start naming these GPIOs so we know what is what */
 
-  /* GPIOA 7 is a generic "stimuli GPIO" used to simulate for 
-     example a button press on the system under test */ 
+  /* GPIOA 7 is a generic "stimuli GPIO" used to simulate for
+     example a button press on the system under test */
   palSetPadMode(GPIOA, 7,
   		PAL_MODE_OUTPUT_PUSHPULL |
   		PAL_STM32_OSPEED_HIGHEST);
   palWritePad(GPIOA, 7, 0);
 
-  /* TODO: Maybe move these out to the "timer.c/timer.h"  */ 
-  /* Grab timer to CCR[0] on rising edge on GPIOA 0 */ 
+  /* TODO: Maybe move these out to the "timer.c/timer.h"  */
+  /* Grab timer to CCR[0] on rising edge on GPIOA 0 */
   palSetPadMode(GPIOA, 0,
 		PAL_MODE_INPUT_PULLDOWN |
 		PAL_MODE_ALTERNATE(2));
 
-  /* Grab timer to CCR[1] on rising edge on GPIOA 1 */ 
+  /* Grab timer to CCR[1] on rising edge on GPIOA 1 */
   palSetPadMode(GPIOA, 1,
 		PAL_MODE_INPUT_PULLDOWN |
 		PAL_MODE_ALTERNATE(2));
@@ -245,7 +246,9 @@ int main(void) {
 
   while(true) {
 
+
     inputline(chp, input_buf, 256); /* blocks */
+
 
     if (strncmp(input_buf, "init", 4) == 0) {
       chprintf(chp, "OK!\n");
@@ -262,29 +265,29 @@ int main(void) {
     } else if (strncmp(input_buf, "RSPTST", 6) == 0) {
       /* Start a response time test (if it is not already running) */
       if (!response_test_running) {
-	char *cmd = strtok(input_buf, " ");
-	char *s_arg0 = strtok(NULL, " ");
-	char *s_arg1 = strtok(NULL, " ");
-	char *s_null = strtok(NULL, " ");
+  	char *cmd = strtok(input_buf, " ");
+  	char *s_arg0 = strtok(NULL, " ");
+  	char *s_arg1 = strtok(NULL, " ");
+  	char *s_null = strtok(NULL, " ");
 
-	(void) cmd;
-	(void) s_null;
-	
-	if (!s_arg0 || !s_arg1) {
-	  chprintf(chp, "RSPTST incorrect arguments\r\n");
-	} else {
+  	(void) cmd;
+  	(void) s_null;
 
-	  num_tests = (uint32_t)atoi(s_arg0);
-	  response_timeout   = (uint32_t)atoi(s_arg1);
-	  response_test_running = true;
-	}
+  	if (!s_arg0 || !s_arg1) {
+  	  chprintf(chp, "RSPTST incorrect arguments\r\n");
+  	} else {
+
+  	  num_tests = (uint32_t)atoi(s_arg0);
+  	  response_timeout   = (uint32_t)atoi(s_arg1);
+  	  response_test_running = true;
+  	}
       } else {
-	chprintf(chp, "RSPTST already running\r\n");
+  	chprintf(chp, "RSPTST already running\r\n");
       }
     } else {
       chprintf(chp, "Unknown command: %s\r\n", input_buf);
     }
-    
+
     memset(input_buf,0,1024);
   }
 

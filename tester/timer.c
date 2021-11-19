@@ -96,7 +96,7 @@ void timer_init(void) {
   rccEnableTIM5(true);
   rccResetTIM5();
   
-  nvicEnableVector(STM32_TIM5_NUMBER, STM32_GPT_TIM5_IRQ_PRIORITY); /* use GPT level prio */
+  nvicEnableVector(STM32_TIM5_NUMBER, 7); // STM32_IRQ_TIM5_PRIORITY);
 
   
   tim5 = STM32_TIM5;  /* gives direct access to the tim5 registers */

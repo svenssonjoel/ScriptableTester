@@ -2,10 +2,10 @@
 # Build global options
 # NOTE: Can be overridden externally.
 #
-
+# BOARD_OTG_NOVBUSSENS needed for STM32f405rgt6 platform
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16
+  USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16 -DBOARD_OTG_NOVBUSSENS
   #USE_OPT += -DBOARD_OTG_NOVBUSSENS
 endif
 
