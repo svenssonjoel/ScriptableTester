@@ -144,6 +144,7 @@ void MainWindow::initPlots()
     ui->responseTimePlot->clearGraphs();
     ui->responseTimePlot->addGraph();
 
+
     ui->responseTimePlot->legend->setVisible(true);
     ui->responseTimePlot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignHCenter);
     ui->responseTimePlot->legend->setBrush(QColor(255, 255, 255, 100));
@@ -833,8 +834,12 @@ void MainWindow::on_responseSaveDataPushButton_clicked()
     for (int i = 0; i < max_len; i ++) {
         bool first = true;
         for (auto o : objs) {
-            fw << (first ? "" : ", ") << QString::number(o.data().at(i));
-            qDebug() << o.data().at(i);
+            if (o.data().size() > i) {
+                fw << (first ? "" : ", ") << QString::number(o.data().at(i));
+                qDebug() << o.data().at(i);
+            } else {
+                fw << (first ? "" : ", ");
+            }
             first = false;
         }
         fw << "\n";
@@ -856,4 +861,16 @@ void MainWindow::on_unitSelectionComboBox_currentIndexChanged(int index)
 void MainWindow::on_responseRescalePushButton_clicked()
 {
   redrawResponsePlots();
+}
+
+void MainWindow::on_legendPositionComboBox_currentIndexChanged(const QString &arg1)
+{
+    if (arg1.startsWith("Center") ) {
+        ui->responseTimePlot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignHCenter);
+    } else if (arg1.startsWith("Left")) {
+        ui->responseTimePlot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignLeft);
+    } else {
+        ui->responseTimePlot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignRight);
+    }
+    ui->responseTimePlot->replot();
 }

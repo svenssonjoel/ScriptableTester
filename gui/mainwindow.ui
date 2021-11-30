@@ -446,20 +446,6 @@
         </item>
         <item row="1" column="0" colspan="3">
          <layout class="QGridLayout" name="gridLayout_10">
-          <item row="1" column="6">
-           <widget class="QPushButton" name="startResponseTestPushButton">
-            <property name="text">
-             <string>Start</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="3">
-           <widget class="QLabel" name="responseNumFaultyLabel">
-            <property name="text">
-             <string>0</string>
-            </property>
-           </widget>
-          </item>
           <item row="1" column="1">
            <widget class="QSpinBox" name="responseNumSamplesSpinBox">
             <property name="toolTip">
@@ -476,6 +462,55 @@
             </property>
            </widget>
           </item>
+          <item row="3" column="6">
+           <widget class="QPushButton" name="responseLoadDataPushButton">
+            <property name="text">
+             <string>Load Data</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="4">
+           <layout class="QHBoxLayout" name="horizontalLayout_10">
+            <item>
+             <widget class="QComboBox" name="unitSelectionComboBox"/>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_9">
+              <property name="text">
+               <string>Unit</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="3" column="7">
+           <widget class="QPushButton" name="responseSaveDataPushButton">
+            <property name="text">
+             <string>Save Data</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="7">
+           <widget class="QPushButton" name="responseExportPDFPushButton">
+            <property name="text">
+             <string>Export PDF</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QPushButton" name="responseNumbucketPushButton">
+            <property name="text">
+             <string>Buckets</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="6">
+           <widget class="QPushButton" name="responseStopPushButton">
+            <property name="text">
+             <string>Stop</string>
+            </property>
+           </widget>
+          </item>
           <item row="2" column="0">
            <widget class="QLabel" name="label_6">
             <property name="toolTip">
@@ -483,19 +518,6 @@
             </property>
             <property name="text">
              <string>Timeout (ms):</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QSpinBox" name="responseTimeoutSpinBox">
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Maximum time to wait for the test-object to respond to a request. Failing to respond within the timeout will result in an error and the test will be aborted.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-            <property name="value">
-             <number>100</number>
             </property>
            </widget>
           </item>
@@ -515,6 +537,26 @@
             </property>
            </widget>
           </item>
+          <item row="1" column="2">
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>Faulty responses:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QSpinBox" name="responseTimeoutSpinBox">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Maximum time to wait for the test-object to respond to a request. Failing to respond within the timeout will result in an error and the test will be aborted.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="maximum">
+             <number>10000</number>
+            </property>
+            <property name="value">
+             <number>100</number>
+            </property>
+           </widget>
+          </item>
           <item row="1" column="0">
            <widget class="QLabel" name="label_5">
             <property name="toolTip">
@@ -525,61 +567,45 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="6">
-           <widget class="QPushButton" name="responseExportPDFPushButton">
+          <item row="1" column="7">
+           <widget class="QPushButton" name="startResponseTestPushButton">
             <property name="text">
-             <string>Export PDF</string>
+             <string>Start</string>
             </property>
            </widget>
           </item>
-          <item row="3" column="0">
-           <widget class="QPushButton" name="responseNumbucketPushButton">
+          <item row="3" column="4">
+           <widget class="QLabel" name="label_10">
             <property name="text">
-             <string>Buckets</string>
+             <string>Legend</string>
             </property>
            </widget>
           </item>
-          <item row="1" column="2">
-           <widget class="QLabel" name="label_7">
+          <item row="1" column="3">
+           <widget class="QLabel" name="responseNumFaultyLabel">
             <property name="text">
-             <string>Faulty responses:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="6">
-           <widget class="QPushButton" name="responseSaveDataPushButton">
-            <property name="text">
-             <string>Save Data</string>
+             <string>0</string>
             </property>
            </widget>
           </item>
           <item row="3" column="5">
-           <widget class="QPushButton" name="responseLoadDataPushButton">
-            <property name="text">
-             <string>Load Data</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="5">
-           <widget class="QPushButton" name="responseStopPushButton">
-            <property name="text">
-             <string>Stop</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="4">
-           <layout class="QHBoxLayout" name="horizontalLayout_10">
+           <widget class="QComboBox" name="legendPositionComboBox">
             <item>
-             <widget class="QComboBox" name="unitSelectionComboBox"/>
+             <property name="text">
+              <string>Center</string>
+             </property>
             </item>
             <item>
-             <widget class="QLabel" name="label_9">
-              <property name="text">
-               <string>Unit</string>
-              </property>
-             </widget>
+             <property name="text">
+              <string>Left</string>
+             </property>
             </item>
-           </layout>
+            <item>
+             <property name="text">
+              <string>Right</string>
+             </property>
+            </item>
+           </widget>
           </item>
          </layout>
         </item>

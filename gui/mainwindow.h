@@ -90,6 +90,8 @@ private slots:
 
     void on_responseRescalePushButton_clicked();
 
+    void on_legendPositionComboBox_currentIndexChanged(const QString &arg1);
+
 private:
     void parsePacket();
     void updateSerialPorts();
