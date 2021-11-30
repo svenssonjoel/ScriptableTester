@@ -88,6 +88,8 @@ private slots:
 
     void on_unitSelectionComboBox_currentIndexChanged(int index);
 
+    void on_responseRescalePushButton_clicked();
+
 private:
     void parsePacket();
     void updateSerialPorts();

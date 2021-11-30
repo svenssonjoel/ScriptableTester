@@ -6,6 +6,7 @@
 #include <QDateTime>
 #include <QScrollBar>
 #include <QDateTime>
+#include <QLine>
 
 #define INDEX_S  3
 #define INDEX_MS 2
@@ -358,9 +359,6 @@ void MainWindow::redrawResponsePlots() {
         break;
     }
 
-
-
-
     double min = 4000000;
     double max = -4000000;
 
@@ -407,7 +405,7 @@ void MainWindow::redrawResponsePlots() {
         ui->responseTimePlot->graph()->setData(bucketVal,bucket);
     }
 
-    //ui->responseTimePlot->xAxis->setRange(0, 1000);
+    //ui->responseTimePlot->xAxis->setRange(0, max);
     //ui->responseTimePlot->xAxis->setTickLength(0, bucket_size);
     ui->responseTimePlot->rescaleAxes();
     ui->responseTimePlot->replot();
@@ -693,6 +691,8 @@ void MainWindow::on_startResponseTestPushButton_clicked()
     //mResponseTimeData.clear();
     QString activeGraph = ui->responseActiveChartComboBox->currentText();
     mResponseTimeMap[activeGraph].clear(); /* bit sneaky */
+    mResponseTimeMap[activeGraph].setMax(0);
+    mResponseTimeMap[activeGraph].setMin(4000000);
 
     mResponseNumFaulty = 0;
     ui->responseNumFaultyLabel->setText("0");
@@ -795,12 +795,51 @@ void MainWindow::on_responseActiveChartComboBox_currentIndexChanged(const QStrin
 
 void MainWindow::on_responseLoadDataPushButton_clicked()
 {
-
+    qDebug() << "Loading of data is not supported";
 }
 
 void MainWindow::on_responseSaveDataPushButton_clicked()
 {
+    QString filename = QFileDialog::getSaveFileName(this, tr("Save data"),QDir::currentPath(),
+                                                    "All files (*.*);; CSV files (*.csv)");
 
+    if (filename.isEmpty()) return;
+
+    QFile file(filename);
+    file.open(QIODevice::WriteOnly);
+
+    QTextStream fw(&file);
+
+    QList<QString> key_list = mResponseTimeMap.keys();
+
+    QList<ResponseTimeDataObject> objs;
+    for (auto key : key_list) {
+        objs.append(mResponseTimeMap.value(key));
+    }
+
+    int max_len = 0;
+    for (auto o : objs) {
+        int len = o.data().size();
+        if (len > max_len) max_len = len;
+    }
+
+
+    QString str = key_list.join(", ");
+    qDebug() << str;
+
+    fw << str << "\n";
+
+    qDebug() << key_list;
+    for (int i = 0; i < max_len; i ++) {
+        bool first = true;
+        for (auto o : objs) {
+            fw << (first ? "" : ", ") << QString::number(o.data().at(i));
+            qDebug() << o.data().at(i);
+            first = false;
+        }
+        fw << "\n";
+    }
+    file.close();
 }
 
 void MainWindow::on_responseNumSamplesSpinBox_valueChanged(const QString &arg1)
@@ -812,4 +851,9 @@ void MainWindow::on_responseNumSamplesSpinBox_valueChanged(const QString &arg1)
 void MainWindow::on_unitSelectionComboBox_currentIndexChanged(int index)
 {
     redrawResponsePlots();
+}
+
+void MainWindow::on_responseRescalePushButton_clicked()
+{
+  redrawResponsePlots();
 }
