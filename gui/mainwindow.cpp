@@ -824,9 +824,16 @@ void MainWindow::on_responseSaveDataPushButton_clicked()
         if (len > max_len) max_len = len;
     }
 
+    QString str;
 
-    QString str = key_list.join(", ");
-    qDebug() << str;
+    if (key_list.length() > 1) {
+        str = key_list.join(", ");
+        qDebug() << str;
+    } else if (key_list.length() == 1) {
+        str = key_list.at(0);
+    } else {
+      return;
+    }
 
     fw << str << "\n";
 
