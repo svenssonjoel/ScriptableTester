@@ -153,6 +153,24 @@ void MainWindow::initPlots()
     legendFont2.setPointSize(10);
     ui->responseTimePlot->legend->setFont(legendFont2);
     ui->responseTimePlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+
+    ui->responseTimeGroupedPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+    ui->responseTimeGroupedPlot->legend->setVisible(true);
+    ui->responseTimeGroupedPlot->legend->setFont(legendFont);
+    ui->responseTimeGroupedPlot->legend->setSelectedFont(legendFont);
+    ui->responseTimeGroupedPlot->legend->setSelectableParts(QCPLegend::spItems);
+    ui->responseTimeGroupedPlot->yAxis->setLabel("Frequency");
+    ui->responseTimeGroupedPlot->xAxis->setLabel("Time (ms)");
+    ui->responseTimeGroupedPlot->clearGraphs();
+    //ui->responseTimeGroupedPlot->addGraph();
+
+    ui->responseTimeGroupedPlot->legend->setVisible(true);
+    ui->responseTimeGroupedPlot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignHCenter);
+    ui->responseTimeGroupedPlot->legend->setBrush(QColor(255, 255, 255, 100));
+    ui->responseTimeGroupedPlot->legend->setBorderPen(Qt::NoPen);
+    ui->responseTimeGroupedPlot->legend->setFont(legendFont2);
+    ui->responseTimeGroupedPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+
 }
 
 
@@ -329,7 +347,7 @@ void MainWindow::on_devConnectPushButton_clicked()
     ui->devConnectPushButton->setEnabled(true);
 }
 
-void MainWindow::redrawResponsePlots() {
+void MainWindow::redrawBarsPlot() {
 
     for (int i = 0; i < ui->responseTimePlot->graphCount(); i ++) {
         ui->responseTimePlot->removeGraph(i); /* does it renumber after removal of 0 ? */
@@ -410,7 +428,122 @@ void MainWindow::redrawResponsePlots() {
     //ui->responseTimePlot->xAxis->setTickLength(0, bucket_size);
     ui->responseTimePlot->rescaleAxes();
     ui->responseTimePlot->replot();
+}
 
+void MainWindow::redrawGroupedPlot() {
+    /* get the unit to use */
+
+    double unit_multiplier = 0.001; /* seconds to milliseconds */
+
+
+    switch(ui->unitSelectionComboBox->currentIndex()) {
+    case INDEX_S:
+        unit_multiplier = 0.001;
+        ui->responseTimeGroupedPlot->xAxis->setLabel("Time (s)");
+        break;
+    case INDEX_MS:
+        unit_multiplier = 1;
+        ui->responseTimeGroupedPlot->xAxis->setLabel("Time (ms)");
+        break;
+    case INDEX_US:
+        unit_multiplier = 1000;
+        ui->responseTimeGroupedPlot->xAxis->setLabel("Time (us)");
+        break;
+    case INDEX_NS:
+        unit_multiplier = 1000000;
+        ui->responseTimeGroupedPlot->xAxis->setLabel("Time (ns)");
+        break;
+    }
+
+    double min = 4000000;
+    double max = -4000000;
+
+    for (auto g : mResponseTimeMap) { /* min max over all data sets */
+        if (g.getMax() > max) max = g.getMax();
+        if (g.getMin() < min) min = g.getMin();
+    }
+    max = max * 1.10;
+
+    double num_buckets = ui->responseTimeBucketsSpinBox->value();
+
+    double bucket_size = (max * unit_multiplier) / num_buckets;
+    if (bucket_size == 0) bucket_size = 1;
+
+    ui->responseTimeGroupedPlot->clearPlottables();
+    QCPBarsGroup *group = new QCPBarsGroup(ui->responseTimeGroupedPlot);
+    group->setSpacing(2);
+    //group->setSpacing(10);
+    //group->setSpacingType(QCPBarsGroup::stPlotCoords);
+    for (auto g : mResponseTimeMap) {
+
+        QColor c = g.color();
+        QString name = g.name();
+
+        QPen pen = QPen(c);
+        pen.setWidth(2);
+
+        QCPBars *newBars = new QCPBars(ui->responseTimeGroupedPlot->xAxis, ui->responseTimeGroupedPlot->yAxis);
+        newBars->setPen(pen);
+        newBars->setName(g.name());
+
+        QVector<double> bucket;
+        QVector<double> bucketVal;
+
+        for (int i = 0; i < num_buckets; i ++) {
+            bucketVal.append(i*bucket_size);
+            bucket.append(0);
+        }
+
+        for (auto val : g.data()) {
+            double b = (val * unit_multiplier) / bucket_size;
+            int index = floor(b);
+            //qDebug() << "index: " << index;
+            bucket[index] = bucket[index] + 1.0;
+        }
+
+        QVector<QString> tickStr = QVector<QString>();
+        QVector<double> datax = QVector<double>();
+        QVector<double> datay = QVector<double>();
+
+
+        int bucket_ix = 1;
+        for (int i = 0; i < num_buckets; i ++){
+            if (bucket[i] > 0) {
+                datay << bucket[i];
+                datax << bucket_ix ++;
+                tickStr << QString::number(bucketVal[i]);
+            }
+        }
+        QSharedPointer<QCPAxisTickerText> textTicker(new QCPAxisTickerText);
+        textTicker->addTicks(datax, tickStr);
+        ui->responseTimeGroupedPlot->xAxis->setTicker(textTicker);
+        ui->responseTimeGroupedPlot->xAxis->setTickLabelRotation(60);
+        ui->responseTimeGroupedPlot->xAxis->setTickLength(0,4);
+        ui->responseTimeGroupedPlot->xAxis->setTickLabelPadding(1);
+        ui->responseTimeGroupedPlot->xAxis->setRange(0,bucket_ix);
+        newBars->setData(datax,datay);
+        newBars->setWidth(1.0 / (1 + mResponseTimeMap.size()));
+        newBars->setBarsGroup(group);
+
+
+        //group->append(newBars);
+    }
+
+    //ui->responseTimeGroupedPlot->rescaleAxes();
+    ui->responseTimeGroupedPlot->yAxis->rescale();
+    ui->responseTimeGroupedPlot->replot();
+}
+
+void MainWindow::redrawResponsePlots() {
+
+    int index = ui->responseTimeTabs->currentIndex();
+    QString tabname = ui->responseTimeTabs->tabText(index);
+
+    if (tabname == "Bars") {
+       redrawBarsPlot();
+    } else if (tabname == "Grouped") {
+       redrawGroupedPlot();
+    }
 }
 
 void MainWindow::testerSerialReadyRead()
@@ -733,10 +866,16 @@ void MainWindow::on_responseNumbucketPushButton_clicked()
 
 void MainWindow::on_responseExportPDFPushButton_clicked()
 {
-    QString file_name = QFileDialog::getSaveFileName(this, "Save as PDF");
+    QString file_name = QFileDialog::getSaveFileName(this, "Save as PDF", ".pdf");
     if (!file_name.isNull())
     {
-        ui->responseTimePlot->savePdf(file_name);
+        int index = ui->responseTimeTabs->currentIndex();
+        QString tabname = ui->responseTimeTabs->tabText(index);
+        if (tabname == "Bars") {
+            ui->responseTimePlot->savePdf(file_name);
+        } else if (tabname == "Grouped") {
+            ui->responseTimeGroupedPlot->savePdf(file_name);
+        }
     }
 }
 
@@ -872,12 +1011,33 @@ void MainWindow::on_responseRescalePushButton_clicked()
 
 void MainWindow::on_legendPositionComboBox_currentIndexChanged(const QString &arg1)
 {
-    if (arg1.startsWith("Center") ) {
-        ui->responseTimePlot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignHCenter);
-    } else if (arg1.startsWith("Left")) {
-        ui->responseTimePlot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignLeft);
+    int index = ui->responseTimeTabs->currentIndex();
+    QString tabStr = ui->responseTimeTabs->tabText(index);
+    QCustomPlot *qp;
+    if (tabStr == "Bars") {
+        qp = ui->responseTimePlot;
+    } else if (tabStr == "Grouped") {
+        qp = ui->responseTimeGroupedPlot;
     } else {
-        ui->responseTimePlot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignRight);
+        return;
     }
-    ui->responseTimePlot->replot();
+
+    if (arg1.startsWith("Center") ) {
+        qp->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignHCenter);
+    } else if (arg1.startsWith("Left")) {
+        qp->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignLeft);
+    } else {
+        qp->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignRight);
+    }
+    qp->replot();
+}
+
+void MainWindow::on_responseTimeTabs_currentChanged(int index)
+{
+    redrawResponsePlots();
+}
+
+void MainWindow::on_legendPositionComboBox_currentTextChanged(const QString &arg1)
+{
+
 }

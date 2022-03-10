@@ -92,6 +92,10 @@ private slots:
 
     void on_legendPositionComboBox_currentIndexChanged(const QString &arg1);
 
+    void on_responseTimeTabs_currentChanged(int index);
+
+    void on_legendPositionComboBox_currentTextChanged(const QString &arg1);
+
 private:
     void parsePacket();
     void updateSerialPorts();
@@ -99,6 +103,8 @@ private:
     void finishScript();
     void printScriptData();
     void redrawResponsePlots();
+    void redrawBarsPlot();
+    void redrawGroupedPlot();
 
     Ui::MainWindow *ui;
 
