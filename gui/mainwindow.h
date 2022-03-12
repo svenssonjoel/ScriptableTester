@@ -123,6 +123,7 @@ private:
     QSharedPointer<QCPGraphDataContainer> mAmpData;
     QSharedPointer<QCPGraphDataContainer> mWattData;
     QSharedPointer<QCPGraphDataContainer> mResponseDataContainer;
+    QSharedPointer<QCPAxisTickerText>     mResponseGroupTicker;
 
     bool mScriptRunning;
     QTimer mScriptTimer;

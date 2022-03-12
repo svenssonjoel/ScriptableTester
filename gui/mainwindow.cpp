@@ -62,6 +62,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->unitSelectionComboBox->setCurrentIndex(3);
 
+    mResponseGroupTicker = QSharedPointer<QCPAxisTickerText>(new QCPAxisTickerText);
 }
 
 MainWindow::~MainWindow()
@@ -154,6 +155,10 @@ void MainWindow::initPlots()
     ui->responseTimePlot->legend->setFont(legendFont2);
     ui->responseTimePlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
 
+
+    QPen p = QPen();
+    p.setWidth(2);
+    p.setColor(QColor(0,0,0));
     ui->responseTimeGroupedPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
     ui->responseTimeGroupedPlot->legend->setVisible(true);
     ui->responseTimeGroupedPlot->legend->setFont(legendFont);
@@ -161,6 +166,8 @@ void MainWindow::initPlots()
     ui->responseTimeGroupedPlot->legend->setSelectableParts(QCPLegend::spItems);
     ui->responseTimeGroupedPlot->yAxis->setLabel("Frequency");
     ui->responseTimeGroupedPlot->xAxis->setLabel("Time (ms)");
+    ui->responseTimeGroupedPlot->xAxis->setBasePen(p);
+    ui->responseTimeGroupedPlot->yAxis->setBasePen(p);
     ui->responseTimeGroupedPlot->clearGraphs();
     //ui->responseTimeGroupedPlot->addGraph();
 
@@ -465,15 +472,53 @@ void MainWindow::redrawGroupedPlot() {
     max = max * 1.10;
 
     double num_buckets = ui->responseTimeBucketsSpinBox->value();
-
     double bucket_size = (max * unit_multiplier) / num_buckets;
     if (bucket_size == 0) bucket_size = 1;
-
+    ui->bucketSizeLabel->setText(QString::number(bucket_size));
     ui->responseTimeGroupedPlot->clearPlottables();
     QCPBarsGroup *group = new QCPBarsGroup(ui->responseTimeGroupedPlot);
     group->setSpacing(2);
     //group->setSpacing(10);
     //group->setSpacingType(QCPBarsGroup::stPlotCoords);
+
+    QMap<int, bool> bucket_exists;
+    QMap<int, int> bucket_ix;
+    bucket_exists.clear();
+
+    for (auto g : mResponseTimeMap) {
+        for (auto val : g.data()) {
+            double b = (val * unit_multiplier) / bucket_size;
+            int index = floor(b);
+            bucket_exists.insert(index, true); /* the bool is nonsense */
+        }
+    }
+
+    QVector<double> bucketVal;
+    QVector<double> bucket;
+    QVector<double> tickVal;
+    QVector<QString> tickStr;
+
+    int buck_ix = 0;
+    int tick_ix = 1;
+    for (auto i : bucket_exists.keys() ) {
+        bucketVal << i*bucket_size;
+        tickVal   << tick_ix ++;
+        tickStr   << QString::number(i*bucket_size);
+        bucket_ix.insert(i, buck_ix++);
+        bucket.append(0);
+    }
+
+
+    mResponseGroupTicker->clear();
+    mResponseGroupTicker->addTicks(tickVal, tickStr);
+    ui->responseTimeGroupedPlot->xAxis->setTicker(mResponseGroupTicker);
+    ui->responseTimeGroupedPlot->xAxis->setTickLabelRotation(60);
+    ui->responseTimeGroupedPlot->xAxis->setTickLength(0,4);
+    ui->responseTimeGroupedPlot->xAxis->setTickLabelPadding(1);
+    ui->responseTimeGroupedPlot->xAxis->setRange(0,tick_ix);
+
+
+
     for (auto g : mResponseTimeMap) {
 
         QColor c = g.color();
@@ -484,47 +529,31 @@ void MainWindow::redrawGroupedPlot() {
 
         QCPBars *newBars = new QCPBars(ui->responseTimeGroupedPlot->xAxis, ui->responseTimeGroupedPlot->yAxis);
         newBars->setPen(pen);
+        newBars->setBrush(QBrush(c));
         newBars->setName(g.name());
 
-        QVector<double> bucket;
-        QVector<double> bucketVal;
+       // for (int i = 0; i < num_buckets; i ++) {
+       //     bucketVal.append(i*bucket_size);
+       //     bucket.append(0);
+       // }
 
-        for (int i = 0; i < num_buckets; i ++) {
-            bucketVal.append(i*bucket_size);
-            bucket.append(0);
+
+        QVector<double>curr_bucket;
+        for (auto e : bucket) {
+            curr_bucket << e;
         }
 
         for (auto val : g.data()) {
             double b = (val * unit_multiplier) / bucket_size;
             int index = floor(b);
-            //qDebug() << "index: " << index;
-            bucket[index] = bucket[index] + 1.0;
+
+            int buck_ix = bucket_ix.value(index);
+            curr_bucket[buck_ix] = curr_bucket[buck_ix] + 1.0;
         }
 
-        QVector<QString> tickStr = QVector<QString>();
-        QVector<double> datax = QVector<double>();
-        QVector<double> datay = QVector<double>();
-
-
-        int bucket_ix = 1;
-        for (int i = 0; i < num_buckets; i ++){
-            if (bucket[i] > 0) {
-                datay << bucket[i];
-                datax << bucket_ix ++;
-                tickStr << QString::number(bucketVal[i]);
-            }
-        }
-        QSharedPointer<QCPAxisTickerText> textTicker(new QCPAxisTickerText);
-        textTicker->addTicks(datax, tickStr);
-        ui->responseTimeGroupedPlot->xAxis->setTicker(textTicker);
-        ui->responseTimeGroupedPlot->xAxis->setTickLabelRotation(60);
-        ui->responseTimeGroupedPlot->xAxis->setTickLength(0,4);
-        ui->responseTimeGroupedPlot->xAxis->setTickLabelPadding(1);
-        ui->responseTimeGroupedPlot->xAxis->setRange(0,bucket_ix);
-        newBars->setData(datax,datay);
+        newBars->setData(tickVal,curr_bucket); /* Same X axis for all data series */
         newBars->setWidth(1.0 / (1 + mResponseTimeMap.size()));
         newBars->setBarsGroup(group);
-
 
         //group->append(newBars);
     }
