@@ -394,12 +394,12 @@
           <item row="2" column="4">
            <layout class="QHBoxLayout" name="horizontalLayout_10">
             <item>
-             <widget class="QComboBox" name="unitSelectionComboBox"/>
-            </item>
-            <item>
              <widget class="QLabel" name="label_9">
               <property name="text">
-               <string>Unit</string>
+               <string>Unit:</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
               </property>
              </widget>
             </item>
@@ -499,7 +499,10 @@
           <item row="3" column="4">
            <widget class="QLabel" name="label_10">
             <property name="text">
-             <string>Legend</string>
+             <string>Legend:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
            </widget>
           </item>
@@ -545,6 +548,9 @@
              <string/>
             </property>
            </widget>
+          </item>
+          <item row="2" column="5">
+           <widget class="QComboBox" name="unitSelectionComboBox"/>
           </item>
          </layout>
         </item>
@@ -640,7 +646,7 @@
           <property name="currentIndex">
            <number>0</number>
           </property>
-          <widget class="QWidget" name="tab_7">
+          <widget class="QWidget" name="responseTimeBarsTab">
            <attribute name="title">
             <string>Bars</string>
            </attribute>
@@ -657,7 +663,7 @@
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="tab_8">
+          <widget class="QWidget" name="responseTimeGroupedTab">
            <attribute name="title">
             <string>Grouped</string>
            </attribute>
@@ -671,6 +677,16 @@
                </sizepolicy>
               </property>
              </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="bucketBreakdownTab">
+           <attribute name="title">
+            <string>Bucket Breakdown</string>
+           </attribute>
+           <layout class="QGridLayout" name="gridLayout_16">
+            <item row="0" column="0">
+             <widget class="QTableWidget" name="bucketBreakdownTableWidget"/>
             </item>
            </layout>
           </widget>

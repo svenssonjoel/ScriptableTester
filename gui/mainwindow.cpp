@@ -172,7 +172,7 @@ void MainWindow::initPlots()
     //ui->responseTimeGroupedPlot->addGraph();
 
     ui->responseTimeGroupedPlot->legend->setVisible(true);
-    ui->responseTimeGroupedPlot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignHCenter);
+    //ui->responseTimeGroupedPlot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop|Qt::AlignHCenter);
     ui->responseTimeGroupedPlot->legend->setBrush(QColor(255, 255, 255, 100));
     ui->responseTimeGroupedPlot->legend->setBorderPen(Qt::NoPen);
     ui->responseTimeGroupedPlot->legend->setFont(legendFont2);
@@ -437,10 +437,14 @@ void MainWindow::redrawBarsPlot() {
     ui->responseTimePlot->replot();
 }
 
-void MainWindow::redrawGroupedPlot() {
-    /* get the unit to use */
-
-    double unit_multiplier = 0.001; /* seconds to milliseconds */
+void MainWindow::redrawGroupedPlot(QVector<double> tickVal, QVector<QString>tickStr) {
+    // get the unit to use
+    if (tickStr.size() == 0 || tickVal.size() == 0) {
+        qDebug() << "No data";
+        return;
+    }
+        /*
+    double unit_multiplier = 0.001; // seconds to milliseconds
 
 
     switch(ui->unitSelectionComboBox->currentIndex()) {
@@ -465,7 +469,7 @@ void MainWindow::redrawGroupedPlot() {
     double min = 4000000;
     double max = -4000000;
 
-    for (auto g : mResponseTimeMap) { /* min max over all data sets */
+    for (auto g : mResponseTimeMap) { // min max over all data sets
         if (g.getMax() > max) max = g.getMax();
         if (g.getMin() < min) min = g.getMin();
     }
@@ -474,13 +478,14 @@ void MainWindow::redrawGroupedPlot() {
     double num_buckets = ui->responseTimeBucketsSpinBox->value();
     double bucket_size = (max * unit_multiplier) / num_buckets;
     if (bucket_size == 0) bucket_size = 1;
-    ui->bucketSizeLabel->setText(QString::number(bucket_size));
+
+*/
     ui->responseTimeGroupedPlot->clearPlottables();
     QCPBarsGroup *group = new QCPBarsGroup(ui->responseTimeGroupedPlot);
     group->setSpacing(2);
     //group->setSpacing(10);
     //group->setSpacingType(QCPBarsGroup::stPlotCoords);
-
+/*
     QMap<int, bool> bucket_exists;
     QMap<int, int> bucket_ix;
     bucket_exists.clear();
@@ -489,7 +494,7 @@ void MainWindow::redrawGroupedPlot() {
         for (auto val : g.data()) {
             double b = (val * unit_multiplier) / bucket_size;
             int index = floor(b);
-            bucket_exists.insert(index, true); /* the bool is nonsense */
+            bucket_exists.insert(index, true); // the bool is nonsense
         }
     }
 
@@ -507,7 +512,7 @@ void MainWindow::redrawGroupedPlot() {
         bucket_ix.insert(i, buck_ix++);
         bucket.append(0);
     }
-
+*/
 
     mResponseGroupTicker->clear();
     mResponseGroupTicker->addTicks(tickVal, tickStr);
@@ -515,10 +520,26 @@ void MainWindow::redrawGroupedPlot() {
     ui->responseTimeGroupedPlot->xAxis->setTickLabelRotation(60);
     ui->responseTimeGroupedPlot->xAxis->setTickLength(0,4);
     ui->responseTimeGroupedPlot->xAxis->setTickLabelPadding(1);
-    ui->responseTimeGroupedPlot->xAxis->setRange(0,tick_ix);
+    ui->responseTimeGroupedPlot->xAxis->setRange(0,tickVal.last()+1);
 
+    ui->responseTimeGroupedPlot->clearItems();
 
+    for (auto i = mBucketedDataMap.begin(); i != mBucketedDataMap.end(); ++i) {
+        BucketedData d = i.value();
 
+        QPen pen = QPen(d.getColor());
+        pen.setWidth(2);
+
+        QCPBars *newBars = new QCPBars(ui->responseTimeGroupedPlot->xAxis, ui->responseTimeGroupedPlot->yAxis);
+        newBars->setPen(pen);
+        newBars->setBrush(QBrush(d.getColor()));
+        newBars->setName(i.key());
+        newBars->setData(tickVal,d.getBucket());
+        newBars->setWidth(1.0 / (1 + mBucketedDataMap.size()));
+        newBars->setBarsGroup(group);
+        ui->responseTimeGroupedPlot->yAxis->rescale();
+    }
+/*
     for (auto g : mResponseTimeMap) {
 
         QColor c = g.color();
@@ -551,27 +572,161 @@ void MainWindow::redrawGroupedPlot() {
             curr_bucket[buck_ix] = curr_bucket[buck_ix] + 1.0;
         }
 
-        newBars->setData(tickVal,curr_bucket); /* Same X axis for all data series */
+        newBars->setData(tickVal,curr_bucket); // Same X axis for all data series
         newBars->setWidth(1.0 / (1 + mResponseTimeMap.size()));
         newBars->setBarsGroup(group);
+        ui->responseTimeGroupedPlot->yAxis->rescale();
 
+        for (auto tick : tickVal) {
+            double y = newBars->dataMainValue(tick-1);
+            QPointF pos = newBars->dataPixelPosition(tick-1);
+            double x2 = ui->responseTimeGroupedPlot->xAxis->pixelToCoord(pos.x());
+            double y2 = ui->responseTimeGroupedPlot->yAxis->pixelToCoord(pos.y() - 20);
+            QCPItemText *textlabel = new QCPItemText(ui->responseTimeGroupedPlot);
+            textlabel->setColor(c);
+            textlabel->setText(QString::number(y));
+            //textlabel->setRotation(45);
+            textlabel->position->setAxes(ui->responseTimeGroupedPlot->xAxis,
+                                         ui->responseTimeGroupedPlot->yAxis);
+            textlabel->position->setType(QCPItemPosition::ptPlotCoords);//  QCPItemPosition::ptPlotCoords);
+            textlabel->position->setCoords(x2,y2);
+        }
+        newBars->setWidth(1.0 / (1 + mResponseTimeMap.size()));
+        newBars->setBarsGroup(group);
         //group->append(newBars);
     }
-
+*/
     //ui->responseTimeGroupedPlot->rescaleAxes();
-    ui->responseTimeGroupedPlot->yAxis->rescale();
+
     ui->responseTimeGroupedPlot->replot();
 }
 
 void MainWindow::redrawResponsePlots() {
 
+    // Precompute the buckets
+    double unit_multiplier = 0.001; /* seconds to milliseconds */
+
+    switch(ui->unitSelectionComboBox->currentIndex()) {
+    case INDEX_S:
+        unit_multiplier = 0.001;
+        ui->responseTimePlot->xAxis->setLabel("Time (s)");
+        break;
+    case INDEX_MS:
+        unit_multiplier = 1;
+        ui->responseTimePlot->xAxis->setLabel("Time (ms)");
+        break;
+    case INDEX_US:
+        unit_multiplier = 1000;
+        ui->responseTimePlot->xAxis->setLabel("Time (us)");
+        break;
+    case INDEX_NS:
+        unit_multiplier = 1000000;
+        ui->responseTimePlot->xAxis->setLabel("Time (ns)");
+        break;
+    }
+
+    double min = 4000000;
+    double max = -4000000;
+
+    for (auto g : mResponseTimeMap) { /* min max over all data sets */
+        if (g.getMax() > max) max = g.getMax();
+        if (g.getMin() < min) min = g.getMin();
+    }
+    max = max * 1.10;
+
+    double num_buckets = ui->responseTimeBucketsSpinBox->value();
+
+    double bucket_size = (max * unit_multiplier) / num_buckets;
+    if (bucket_size == 0) bucket_size = 1;
+
+    ui->bucketSizeLabel->setText(QString::number(bucket_size));
+
+
+    QMap<int, bool> bucket_exists;
+    QMap<int, int> bucket_ix;
+    bucket_exists.clear();
+    // Check accross all data which buckets exists
+    for (auto g : mResponseTimeMap) {
+        for (auto val : g.data()) {
+            double b = (val * unit_multiplier) / bucket_size;
+            int index = floor(b);
+            bucket_exists.insert(index, true); /* the bool is nonsense */
+        }
+    }
+
+    QVector<double> bucketVal;
+    QVector<double> bucket;
+    QVector<double> tickVal;
+    QVector<QString> tickStr;
+
+    int buck_ix = 0;
+    int tick_ix = 1;
+    for (auto i : bucket_exists.keys() ) {
+        bucketVal << i*bucket_size;
+        tickVal   << tick_ix ++;
+        tickStr   << QString::number(i*bucket_size);
+        bucket_ix.insert(i, buck_ix++);
+        bucket.append(0);
+    }
+
+
+    mBucketedDataMap.clear();
+    for (auto g : mResponseTimeMap) {
+
+        QVector<double> curr_bucket;
+        for (auto e : bucket) {
+            curr_bucket.append(e);
+        }
+
+        BucketedData bd;
+        bd.setColor(g.color());
+        for (auto val : g.data()) {
+            double b = (val * unit_multiplier) / bucket_size;
+            int index = floor(b);
+
+            int buck_ix = bucket_ix.value(index);
+            curr_bucket[buck_ix] = curr_bucket[buck_ix] + 1.0;
+        }
+        bd.setBucket(curr_bucket);
+        mBucketedDataMap.insert(g.name(), bd);
+    }
     int index = ui->responseTimeTabs->currentIndex();
     QString tabname = ui->responseTimeTabs->tabText(index);
 
     if (tabname == "Bars") {
        redrawBarsPlot();
     } else if (tabname == "Grouped") {
-       redrawGroupedPlot();
+       redrawGroupedPlot(tickVal, tickStr);
+    }
+    redrawBucketBreakdown(tickVal, tickStr);
+}
+
+void MainWindow::redrawBucketBreakdown(QVector<double> tickVal, QVector<QString> tickStr) {
+    ui->bucketBreakdownTableWidget->clear();
+    ui->bucketBreakdownTableWidget->setRowCount(tickVal.size());
+    ui->bucketBreakdownTableWidget->setColumnCount(mBucketedDataMap.size() + 1);
+
+    QStringList tableHeader;
+    tableHeader << "Bucket";
+    for (auto key : mBucketedDataMap.keys()) {
+        tableHeader << key;
+    }
+
+    ui->bucketBreakdownTableWidget->setHorizontalHeaderLabels(tableHeader);
+
+    QString curr_graph = ui->responseActiveChartComboBox->currentText();
+
+    int col = 1;
+    for (auto curr_graph : mBucketedDataMap.keys()){
+
+        BucketedData bd = mBucketedDataMap.value(curr_graph);
+        for (int i = 0; i < tickVal.size(); i ++) {
+            if (bd.getBucket().at(i) > 0.0 ) {
+                ui->bucketBreakdownTableWidget->setItem(i,0, new QTableWidgetItem(tickStr.at(i)));
+                ui->bucketBreakdownTableWidget->setItem(i,col, new QTableWidgetItem(QString::number(bd.getBucket().at(i))));
+            }
+        }
+        col++; // columns
     }
 }
 
@@ -757,8 +912,6 @@ void MainWindow::finishScript()
     mScriptData.end_time = timestamp;
 
     printScriptData();
-
-
     //qDebug() << "Script stopped at: " << ct;
 }
 
@@ -954,17 +1107,73 @@ void MainWindow::on_responseRenameChartPushButton_clicked()
         ui->responseActiveChartComboBox->addItem(text);
         redrawResponsePlots();
     }
-
 }
 
 void MainWindow::on_responseActiveChartComboBox_currentIndexChanged(const QString &arg1)
 {
+    redrawResponsePlots();
     ui->responseActiveChartLabel->setText(arg1);
 }
 
 void MainWindow::on_responseLoadDataPushButton_clicked()
 {
-    qDebug() << "Loading of data is not supported";
+    QString filename = QFileDialog::getOpenFileName(this, tr("Load data"), QDir::currentPath(),
+                                                    "All files (*.*);; CSV files (*.csv)");
+    if (filename.isEmpty()) return;
+
+    QFile file(filename);
+    file.open(QIODevice::ReadOnly);
+
+    QByteArray header = file.readLine();
+    if (header.size() == 0) {
+        qDebug() << "No data in file";
+        return;
+    }
+
+    mResponseTimeMap.clear();
+    ui->responseActiveChartComboBox->clear();
+
+    QMap<int,QString> indexMap;
+
+    QString headerStr = QString(header);
+    QStringList headerElts = headerStr.split(",");
+    int i = 0;
+    for (auto name : headerElts) {
+        ResponseTimeDataObject rtdo;
+        rtdo.setName(name.trimmed());
+        ui->responseActiveChartComboBox->addItem(rtdo.name());
+        ui->responseActiveChartComboBox->setCurrentText(rtdo.name());
+        mResponseTimeMap.insert(rtdo.name(),rtdo);
+        indexMap.insert(i++,rtdo.name());
+    }
+
+    QByteArray data = file.readLine();
+    while (data.size() > 0) {
+
+        QStringList dataElts = QString(data).split(",");
+
+        int i = 0;
+        for (auto elt : dataElts) {
+            if (elt.length() > 0) {
+                bool ok;
+                double val = elt.toDouble(&ok);
+                if (!indexMap.contains(i)) {
+                    qDebug() << "Index map does not contain: " << i;
+                    return;
+                }
+                if (ok) {
+                    QString name = indexMap[i];
+                    qDebug() << "adding: " << name << " : " << val;
+                    mResponseTimeMap[name].append(val);
+                }
+            } else {
+                qDebug() << "zero size element";
+            }
+            i++;
+        }
+        data = file.readLine();
+    }
+    redrawResponsePlots();
 }
 
 void MainWindow::on_responseSaveDataPushButton_clicked()
@@ -1024,12 +1233,13 @@ void MainWindow::on_responseSaveDataPushButton_clicked()
 
 void MainWindow::on_responseNumSamplesSpinBox_valueChanged(const QString &arg1)
 {
-
+    (void)arg1;
 }
 
 
 void MainWindow::on_unitSelectionComboBox_currentIndexChanged(int index)
 {
+    (void)index;
     redrawResponsePlots();
 }
 
@@ -1063,10 +1273,11 @@ void MainWindow::on_legendPositionComboBox_currentIndexChanged(const QString &ar
 
 void MainWindow::on_responseTimeTabs_currentChanged(int index)
 {
+    (void)index;
     redrawResponsePlots();
 }
 
 void MainWindow::on_legendPositionComboBox_currentTextChanged(const QString &arg1)
 {
-
+    (void)arg1;
 }

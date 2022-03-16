@@ -7,6 +7,7 @@
 #include <QTimer>
 #include "qcustomplot.h"
 #include "responsetimedataobject.h"
+#include "bucketeddata.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -104,7 +105,7 @@ private:
     void printScriptData();
     void redrawResponsePlots();
     void redrawBarsPlot();
-    void redrawGroupedPlot();
+    //void redrawGroupedPlot();
 
     Ui::MainWindow *ui;
 
@@ -132,9 +133,12 @@ private:
     bool mResponseTestRunning;
     //QVector<double> mResponseTimeData;
     QMap<QString, ResponseTimeDataObject> mResponseTimeMap;
+    QMap<QString, BucketedData> mBucketedDataMap;
     uint32_t mResponseNumFaulty;
 
     QString mTesterSerialbuffer;
 
+    void redrawBucketBreakdown(QVector<double> tickVal, QVector<QString> tickStr);
+    void redrawGroupedPlot(QVector<double> tickVal, QVector<QString> tickStr);
 };
 #endif // MAINWINDOW_H
