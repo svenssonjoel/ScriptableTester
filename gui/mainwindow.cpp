@@ -131,7 +131,9 @@ void MainWindow::initPlots()
 
 
     /* Setup responseTime plot */
-
+    QPen p = QPen();
+    p.setWidth(2);
+    p.setColor(QColor(0,0,0));
 
     ui->responseTimePlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
     ui->responseTimePlot->legend->setVisible(true);
@@ -142,6 +144,8 @@ void MainWindow::initPlots()
     ui->responseTimePlot->legend->setSelectableParts(QCPLegend::spItems);
     ui->responseTimePlot->yAxis->setLabel("Frequency");
     ui->responseTimePlot->xAxis->setLabel("Time (ms)");
+    ui->responseTimePlot->xAxis->setBasePen(p);
+    ui->responseTimePlot->yAxis->setBasePen(p);
     ui->responseTimePlot->clearGraphs();
     ui->responseTimePlot->addGraph();
 
@@ -156,9 +160,7 @@ void MainWindow::initPlots()
     ui->responseTimePlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
 
 
-    QPen p = QPen();
-    p.setWidth(2);
-    p.setColor(QColor(0,0,0));
+
     ui->responseTimeGroupedPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
     ui->responseTimeGroupedPlot->legend->setVisible(true);
     ui->responseTimeGroupedPlot->legend->setFont(legendFont);
